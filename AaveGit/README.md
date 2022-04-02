@@ -1,15 +1,20 @@
-# Basic Sample Hardhat Project
+# Aave X Balancer Pools Supply 
+# Polygon Mainnet Fork
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts.
 
-Try running some of the following tasks:
+## Supply Function : 
+
+- Supply Matic to Aave V3 Pool
+- Borrow Usdc 200% off collat from Aave
+- Supply Borrowed Usdc to Balancer Pool Mai/Usdc 
+
+## Whithdraw Function: 
+
+- Withdraw Usdc from Balancer
+- Repay Usdc to Aave
+- Withdraw initials funds from Aave 
 
 ```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-node scripts/sample-script.js
-npx hardhat help
+npm install
+npx hardhat test (fork Polygon mainnet)
 ```
