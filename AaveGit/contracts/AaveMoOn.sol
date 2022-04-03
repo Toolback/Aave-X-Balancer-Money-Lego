@@ -139,7 +139,7 @@ contract AaveMoOn {
 
     //\\ ERC20 : Wrap nativeMatic from source contract 
     function wrapMatic() public payable returns(uint256) {
-        wMatic.deposit{value: AMOUNT_1}();
+        wMatic.deposit{value: msg.value}();
         return wMatic.balanceOf(msg.sender);
     }
     /// [X] TX reverted 
