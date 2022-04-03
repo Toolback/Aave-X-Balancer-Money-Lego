@@ -48,7 +48,7 @@ async function increaseTime(value) {
 // It is necessary to note that you must add an interface to your project
 
 
-describe('AaveMoOn', () => {
+describe('AaveMoOn Test Contract', () => {
   let aaveMoOn;
   // let maticAddress = "0x0000000000000000000000000000000000001010"
 
@@ -72,41 +72,63 @@ describe('AaveMoOn', () => {
       });
     });
 
-    describe("Swap native Matic to wrapper Matic", async () => {
-      it("Swap", async () => {
-        const swapExactInputSingle = await aaveMoOn.swapExactInputSingle({value: AMOUNT_USDC});
-        assert.isAtLeast(swapExactInputSingle, 1, "greater or equal to 1");
+    describe("UniSwap ExactInput matic/wMatic", async () => {
+      it("Swap from Uniswap", async () => {
+        const maticBalance = await aaveMoOn.maticBalance();
+        console.log("Matic funds available :", ethers.utils.formatUnits(maticBalance, 18))
+
+        const wMaticBalance = await aaveMoOn.wMaticBalance();
+        console.log("wMatic funds available :", ethers.utils.formatUnits(wMaticBalance, 18));
+
+        const swapExactInputSingle = await aaveMoOn.swapExactInputSingle(AMOUNT_1);
+
+        const maticBalanceAfter = await aaveMoOn.maticBalance();
+        console.log("Matic funds available :", ethers.utils.formatUnits(maticBalanceAfter, 18))
+
+        const wMaticBalanceAfter = await aaveMoOn.wMaticBalance();
+        console.log("wMatic funds available :", ethers.utils.formatUnits(wMaticBalanceAfter, 18));
+
+
+        assert.isAbove(wMaticBalanceAfter, wMaticBalance, "Balance should increase");
       });
     });
 
     describe("Wrap Matic from wMatic Contract", async () => {
-      it("try to wrap", async () => {
-        const wrapMatic = await aaveMoOn.wrapMatic({});
-        assert.isAtLeast(wrapMatic, 1, "greater or equal to 1");
-      });
-    });
+      it("Try to wrap from Matic Contract", async () => {
 
-
-    describe("wMatic Balance has to be funded", async () => {
-      it("Fetch wMatic Balance from contract", async () => {
-        const wMaticBalance = await aaveMoOn.wMaticBalance();
-        console.log("Matic funds available :", ethers.utils.formatUnits(wMaticBalance, 18))
-        assert.isAtLeast(wMaticBalance, 1, "greater or equal to 1");
-      });
-    });
-
-    describe("Matic Funds", async () => {
-      it("Fetch Matic Balance from contract", async () => {
         const maticBalance = await aaveMoOn.maticBalance();
         console.log("Matic funds available :", ethers.utils.formatUnits(maticBalance, 18))
-        assert.isAtLeast(maticBalance, 1, "greater or equal to 1");
+
+        const wrapMatic = await aaveMoOn.wrapMatic({value: AMOUNT_1});
+
+        const maticBalanceAfter = await aaveMoOn.maticBalance();
+        console.log("Matic funds available :", ethers.utils.formatUnits(maticBalanceAfter, 18))
+        
+        assert.isBelow(maticBalanceAfter, maticBalance, "Balance should Decrease");
       });
     });
+
+
+    // describe("wMatic Balance has to be funded", async () => {
+    //   it("Fetch wMatic Balance from contract", async () => {
+    //     const wMaticBalance = await aaveMoOn.wMaticBalance();
+    //     console.log("wMatic funds available :", ethers.utils.formatUnits(wMaticBalance, 18))
+    //     assert.isAtLeast(wMaticBalance, 1, "greater or equal to 1");
+    //   });
+    // });
+
+    // describe("Matic Funds", async () => {
+    //   it("Fetch Matic Balance from contract", async () => {
+    //     const maticBalance = await aaveMoOn.maticBalance();
+    //     console.log("Matic funds available :", ethers.utils.formatUnits(maticBalance, 18))
+    //     assert.isAtLeast(maticBalance, 1, "greater or equal to 1");
+    //   });
+    // });
 
 
     describe("Approve wMatic allowance", async () => {
       it("allow 1 token to Pool / WETHGateway", async () => {
-        const approveWMatic = await aaveMoOn.approveWMatic({value: 1});
+        const approveWMatic = await aaveMoOn.approveWMatic(AMOUNT_1);
         // assert.equal(approveSupply, true);
         assert.isAtLeast(approveWMatic, 1, "greater or equal to 1");
 
@@ -115,7 +137,7 @@ describe('AaveMoOn', () => {
 
     describe("Approve Matic allowance", async () => {
       it("allow 1 token to Pool / WETHGateway", async () => {
-        const approveMatic = await aaveMoOn.approveMatic({value: 1});
+        const approveMatic = await aaveMoOn.approveMatic(AMOUNT_1);
         // assert.equal(approveSupply, true);
         assert.isAtLeast(approveMatic, 1, "greater or equal to 1");
 
@@ -139,7 +161,20 @@ describe('AaveMoOn', () => {
     describe("Supply from Pool Contract", async () => {
       it("Should Deposit WMatic to V3 Pool Contract", async () => {
         // await aaveMoOn.approveSupply(AMOUNT_1);
-        const letsDoItFrens = await aaveMoOn.letsDoItFrens({value: 1});
+
+        const maticBalance = await aaveMoOn.maticBalance();
+        console.log("Matic funds available :", ethers.utils.formatUnits(maticBalance, 18))
+
+        const wMaticBalance = await aaveMoOn.wMaticBalance();
+        console.log("wMatic funds available :", ethers.utils.formatUnits(wMaticBalance, 18));
+
+        const letsDoItFrens = await aaveMoOn.letsDoItFrens(AMOUNT_1);
+
+        const maticBalanceAfter = await aaveMoOn.maticBalance();
+        console.log("Matic funds available :", ethers.utils.formatUnits(maticBalanceAfter, 18))
+
+        const wMaticBalanceAfter = await aaveMoOn.wMaticBalance();
+        console.log("wMatic funds available :", ethers.utils.formatUnits(wMaticBalanceAfter, 18));
 
         // assert.equal(letsDoItFrens, true);
         assert.isTrue(letsDoItFrens, 'Supply succeed');
