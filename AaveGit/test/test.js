@@ -16,6 +16,7 @@ let AMOUNT_2 = ethers.utils.parseEther('2');
 let AMOUNT_USDC = ethers.utils.parseEther('3');
 let AMOUNT_500 = ethers.utils.parseEther('500');
 
+
 // TOFIX
 // let account
 // function getAccount(){
@@ -80,7 +81,9 @@ describe('AaveMoOn Test Contract', () => {
         const wMaticBalance = await aaveMoOn.wMaticBalance();
         console.log("wMatic funds available :", ethers.utils.formatUnits(wMaticBalance, 18));
 
-        const swapExactInputSingle = await aaveMoOn.swapExactInputSingle(AMOUNT_1);
+        console.log(AMOUNT_1, "is AMOUNT_1 string or uint ?")
+
+        await aaveMoOn.swapExactInputSingle(AMOUNT_1);
 
         const maticBalanceAfter = await aaveMoOn.maticBalance();
         console.log("Matic funds available :", ethers.utils.formatUnits(maticBalanceAfter, 18))
@@ -89,7 +92,7 @@ describe('AaveMoOn Test Contract', () => {
         console.log("wMatic funds available :", ethers.utils.formatUnits(wMaticBalanceAfter, 18));
 
 
-        assert.isAbove(wMaticBalanceAfter, wMaticBalance, "Balance should increase");
+        assert.isBelow(maticBalanceAfter, maticBalance, "Balance should increase");
       });
     });
 
@@ -99,10 +102,16 @@ describe('AaveMoOn Test Contract', () => {
         const maticBalance = await aaveMoOn.maticBalance();
         console.log("Matic funds available :", ethers.utils.formatUnits(maticBalance, 18))
 
-        const wrapMatic = await aaveMoOn.wrapMatic({value: AMOUNT_1});
+        const wMaticBalance = await aaveMoOn.wMaticBalance();
+        console.log("wMatic funds available :", ethers.utils.formatUnits(wMaticBalance, 18));
+
+        await aaveMoOn.wrapMatic({value: AMOUNT_1});
 
         const maticBalanceAfter = await aaveMoOn.maticBalance();
         console.log("Matic funds available :", ethers.utils.formatUnits(maticBalanceAfter, 18))
+
+        const wMaticBalanceAfter = await aaveMoOn.wMaticBalance();
+        console.log("wMatic funds available :", ethers.utils.formatUnits(wMaticBalanceAfter, 18));
         
         assert.isBelow(maticBalanceAfter, maticBalance, "Balance should Decrease");
       });
@@ -129,8 +138,9 @@ describe('AaveMoOn Test Contract', () => {
     describe("Approve wMatic allowance", async () => {
       it("allow 1 token to Pool / WETHGateway", async () => {
         const approveWMatic = await aaveMoOn.approveWMatic(AMOUNT_1);
+        console.log(approveWMatic.value, "Allowance supposed")
         // assert.equal(approveSupply, true);
-        assert.isAtLeast(approveWMatic, 1, "greater or equal to 1");
+        assert.isAtLeast(approveWMatic.value, 1, "greater or equal to 1");
 
       });
     });
@@ -138,8 +148,9 @@ describe('AaveMoOn Test Contract', () => {
     describe("Approve Matic allowance", async () => {
       it("allow 1 token to Pool / WETHGateway", async () => {
         const approveMatic = await aaveMoOn.approveMatic(AMOUNT_1);
+        console.log(approveMatic.value, "Allowance supposed")
         // assert.equal(approveSupply, true);
-        assert.isAtLeast(approveMatic, 1, "greater or equal to 1");
+        assert.isAtLeast(approveMatic.value, 1, "greater or equal to 1");
 
       });
     });
@@ -149,7 +160,7 @@ describe('AaveMoOn Test Contract', () => {
         const maticBalance = await aaveMoOn.maticBalance();
         console.log("Matic funds available :", ethers.utils.formatUnits(maticBalance, 18))
 
-        const dGateDeposit = await aaveMoOn.dGateDeposit({value: AMOUNT_1});
+        await aaveMoOn.dGateDeposit({value: AMOUNT_1});
 
         const maticBalanceAfter = await aaveMoOn.maticBalance();
         console.log("Matic funds available :", ethers.utils.formatUnits(maticBalanceAfter, 18))
@@ -158,7 +169,7 @@ describe('AaveMoOn Test Contract', () => {
       });
     });
 
-    describe("Supply from Pool Contract", async () => {
+    describe("Supply to Aave V3 Pool Contract", async () => {
       it("Should Deposit WMatic to V3 Pool Contract", async () => {
         // await aaveMoOn.approveSupply(AMOUNT_1);
 
@@ -168,7 +179,8 @@ describe('AaveMoOn Test Contract', () => {
         const wMaticBalance = await aaveMoOn.wMaticBalance();
         console.log("wMatic funds available :", ethers.utils.formatUnits(wMaticBalance, 18));
 
-        const letsDoItFrens = await aaveMoOn.letsDoItFrens(AMOUNT_1);
+        const aTokendata = await aaveMoOn.letsDoItFrens(AMOUNT_1);
+        console.log("AToken fund here :", aTokendata)
 
         const maticBalanceAfter = await aaveMoOn.maticBalance();
         console.log("Matic funds available :", ethers.utils.formatUnits(maticBalanceAfter, 18))
@@ -177,7 +189,7 @@ describe('AaveMoOn Test Contract', () => {
         console.log("wMatic funds available :", ethers.utils.formatUnits(wMaticBalanceAfter, 18));
 
         // assert.equal(letsDoItFrens, true);
-        assert.isTrue(letsDoItFrens, 'Supply succeed');
+        assert.isBelow(maticBalanceAfter, maticBalance, "Balance Should Decrease");
 
       });
     });
