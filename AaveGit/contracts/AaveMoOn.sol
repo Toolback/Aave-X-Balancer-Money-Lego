@@ -11,6 +11,7 @@ import '@aave/periphery-v3/contracts/misc/interfaces/IWETH.sol';
 import '@aave/periphery-v3/contracts/misc/interfaces/IWETHGateway.sol';
 import '@aave/core-v3/contracts/interfaces/IAToken.sol';
 import '@aave/core-v3/contracts/interfaces/IStableDebtToken.sol';
+import '@aave/core-v3/contracts/interfaces/ICreditDelegationToken.sol';
 import '@aave/core-v3/contracts/dependencies/openzeppelin/contracts/IERC20.sol';
 
 import '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
@@ -30,8 +31,8 @@ contract AaveMoOn {
 
     // Aave Tokens
     IAToken public constant aToken = IAToken(0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97);
-    IStableDebtToken public constant debtToken = IStableDebtToken(0xe590cfca10e81FeD9B0e4496381f02256f5d2f61);
-
+    IStableDebtToken public constant debtToken = IStableDebtToken(0xF15F26710c827DDe8ACBA678682F3Ce24f2Fb56E);
+    ICreditDelegationToken public constant delegationDebtToken = ICreditDelegationToken(0xF15F26710c827DDe8ACBA678682F3Ce24f2Fb56E);
 
     bool useAsCollateral = true;
 
@@ -83,6 +84,9 @@ contract AaveMoOn {
         // approveMaxSpend(matic, address(swapRouter));
         approveMaxSpend(wMatic, address(swapRouter));
         approveMaxSpend(address(aToken), address(swapRouter)); 
+
+
+        approveDelegation(100);
     }
 
 /*________________________________________________________/
@@ -129,6 +133,10 @@ contract AaveMoOn {
     function debtTokenBalance() public view returns(uint256 balance_) {
         balance_ =  debtToken.principalBalanceOf(msg.sender);
     }
+
+    function borrowAllowanceBalance() public view returns(uint256 balance_) {
+        balance_ = delegationDebtToken.borrowAllowance(msg.sender, address(this));
+    }
     
     // function getWethAddress() public view returns(address) {
     //     return WETHGateway.getWETHAddress();
@@ -145,6 +153,13 @@ contract AaveMoOn {
 
     function approveMaxSpend(address token, address spender) internal {
         IERC20(token).approve(spender, type(uint256).max);
+    }
+
+    function approveDelegation(uint256 amount) public {
+        delegationDebtToken.approveDelegation(address(this), amount);
+        delegationDebtToken.approveDelegation(GP(), amount);
+        delegationDebtToken.approveDelegation(msg.sender, amount);
+
     }
 
     //\\ Pool : Set User selected Reserve as collateral for borrowing 
@@ -203,7 +218,7 @@ contract AaveMoOn {
 
     //\\ Pool : Trying to borrow Usdc from Aave v3 Pool 
     function borrowUsdcFromPool(uint256 _amount) public {
-        // Allow Contract allowance (?)
+        // Allow Contract spending (?)
         approveMaxSpend(usdc, address(this));
         // approveMaxSpend(matic, address(this));
         approveMaxSpend(wMatic, address(this));
@@ -217,6 +232,10 @@ contract AaveMoOn {
         approveMaxSpend(address(aToken), GP()); 
 
 
+        // Allow Contract Credit Delegation
+        approveDelegation(_amount);
+
+        // USDC borrowing from contract to pool 
         IPool(GP()).borrow(usdc, _amount, 1, 0, msg.sender);
     }
     /// [X] TX reverted (Wrong Token/Pool Address ? Reserve not set as collat ? Not allowed to dispose of funds ?) 
