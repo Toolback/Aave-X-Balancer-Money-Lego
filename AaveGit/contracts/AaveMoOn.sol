@@ -1,10 +1,6 @@
 pragma solidity ^0.8.10;
 pragma abicoder v2;
 
-// Polygon Mainnet Fork
-// run -> npx hardhat test
-
-
 
 import '@aave/core-v3/contracts/interfaces/IPool.sol';
 import '@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol';
@@ -22,6 +18,7 @@ import '@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol';
 
 
 
+// Polygon MainNET Fork
 contract AaveMoOn {
     //Uniswap 
     ISwapRouter public constant swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564); // Wrong Polygon address ?
@@ -60,19 +57,19 @@ contract AaveMoOn {
 
     constructor() {
 
-        // // Allow Contract allowance (?)
-        // approveMaxSpend(usdc, address(this));
+        // Allow Contract allowance (?)
+        approveMaxSpend(usdc, address(this));
         // approveMaxSpend(matic, address(this));
-        // approveMaxSpend(wMatic, address(this));
+        approveMaxSpend(wMatic, address(this));
         // approveMaxSpend(address(debtToken), address(this));
-        // approveMaxSpend(address(aToken), address(this)); 
+        approveMaxSpend(address(aToken), address(this)); 
 
-        // // Approve Aave V3 Pool allowance
-        // approveMaxSpend(usdc, GP());
+        // Approve Aave V3 Pool allowance
+        approveMaxSpend(usdc, GP());
         // approveMaxSpend(matic, GP());
-        // approveMaxSpend(wMatic, GP());
+        approveMaxSpend(wMatic, GP());
         // approveMaxSpend(address(debtToken), GP());
-        // approveMaxSpend(address(aToken), GP()); 
+        approveMaxSpend(address(aToken), GP()); 
     }
 
 /*________________________________________________________/
@@ -221,9 +218,9 @@ contract AaveMoOn {
         IPool pool = IPool(GP());
 
 
-        pool.supply(matic, _amount, msg.sender, 0);
+        pool.supply(wMatic, _amount, msg.sender, 0);
 
-        setReserveAsCollateral(matic);
+        // setReserveAsCollateral(wMatic);
         
         // pool.borrow(usdc, AMOUNT_USDC, 1, 0, msg.sender);
 
