@@ -15,6 +15,8 @@
 - Repay Usdc to Aave
 - Withdraw initials funds from Aave 
 
+Replace .env file for testing
+
 ```shell
 npm install
 npx hardhat test (fork Polygon mainnet)
