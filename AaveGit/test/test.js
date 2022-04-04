@@ -135,25 +135,25 @@ describe('AaveMoOn Test Contract', () => {
     // });
 
 
-    describe("Approve wMatic allowance", async () => {
-      it("allow 1 token to Pool / WETHGateway", async () => {
-        const approveWMatic = await aaveMoOn.approveWMatic(AMOUNT_1);
-        console.log(approveWMatic.value, "Allowance supposed")
-        // assert.equal(approveSupply, true);
-        assert.isAtLeast(approveWMatic.value, 1, "greater or equal to 1");
+    // describe("Approve wMatic allowance", async () => {
+    //   it("allow 1 token to Pool / WETHGateway", async () => {
+    //     const approveWMatic = await aaveMoOn.approveWMatic(AMOUNT_1);
+    //     console.log(approveWMatic.value, "Allowance supposed")
+    //     // assert.equal(approveSupply, true);
+    //     assert.isAtLeast(approveWMatic.value, 1, "greater or equal to 1");
 
-      });
-    });
+    //   });
+    // });
 
-    describe("Approve Matic allowance", async () => {
-      it("allow 1 token to Pool / WETHGateway", async () => {
-        const approveMatic = await aaveMoOn.approveMatic(AMOUNT_1);
-        console.log(approveMatic.value, "Allowance supposed")
-        // assert.equal(approveSupply, true);
-        assert.isAtLeast(approveMatic.value, 1, "greater or equal to 1");
+    // describe("Approve Matic allowance", async () => {
+    //   it("allow 1 token to Pool / WETHGateway", async () => {
+    //     const approveMatic = await aaveMoOn.approveMatic(AMOUNT_1);
+    //     console.log(approveMatic.value, "Allowance supposed")
+    //     // assert.equal(approveSupply, true);
+    //     assert.isAtLeast(approveMatic.value, 1, "greater or equal to 1");
 
-      });
-    });
+    //   });
+    // });
 
     describe("WETHGateWay Deposit", async () => {
       it("Should Deposit Native Matic to Aave V3 WETHGateway", async () => {
