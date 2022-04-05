@@ -1,5 +1,8 @@
 pragma solidity ^0.8.10;
 pragma abicoder v2;
+// Polygon Mainnet Fork
+// replace ALCHEMY_URL in .env file
+// run : npx hardhat test
 
 
 import '@aave/core-v3/contracts/interfaces/IPool.sol';
@@ -19,7 +22,6 @@ import '@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol';
 
 
 
-// Polygon MainNET Fork
 contract AaveMoOn {
     //Uniswap 
     ISwapRouter public constant swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564); // Wrong Polygon address ?
@@ -33,8 +35,8 @@ contract AaveMoOn {
     //wMatic
     IAToken public constant aToken = IAToken(0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97); 
     // usdc Stable Debt Token
-    IStableDebtToken public constant debtToken = IStableDebtToken(0xF15F26710c827DDe8ACBA678682F3Ce24f2Fb56E);
-    ICreditDelegationToken public constant delegationDebtToken = ICreditDelegationToken(0xF15F26710c827DDe8ACBA678682F3Ce24f2Fb56E);
+    IStableDebtToken public constant debtToken = IStableDebtToken(0x307ffe186F84a3bc2613D1eA417A5737D69A7007);
+    ICreditDelegationToken public constant delegationDebtToken = ICreditDelegationToken(0x307ffe186F84a3bc2613D1eA417A5737D69A7007);
 
     bool useAsCollateral = true;
 
@@ -62,25 +64,25 @@ contract AaveMoOn {
 
     constructor() {
 
-        // Allow Contract allowance (?)
-        approveMaxSpend(usdc, address(this));
-        // approveMaxSpend(matic, address(this));
-        approveMaxSpend(wMatic, address(this));
-        approveMaxSpend(address(aToken), address(this)); 
+        // // Allow Contract allowance (?)
+        // approveMaxSpend(usdc, address(this));
+        // // approveMaxSpend(matic, address(this));
+        // approveMaxSpend(wMatic, address(this));
+        // approveMaxSpend(address(aToken), address(this)); 
 
-        // Approve Aave V3 Pool allowance
-        approveMaxSpend(usdc, GP());
-        // approveMaxSpend(matic, GP());
-        approveMaxSpend(wMatic, GP());
-        // approveMaxSpend(address(debtToken), GP());
-        approveMaxSpend(address(aToken), GP()); 
+        // // Approve Aave V3 Pool allowance
+        // approveMaxSpend(usdc, GP());
+        // // approveMaxSpend(matic, GP());
+        // approveMaxSpend(wMatic, GP());
+        // // approveMaxSpend(address(debtToken), GP());
+        // approveMaxSpend(address(aToken), GP()); 
 
-        // Approve Aave V3 wEthGateway allowance
-        approveMaxSpend(usdc, address(WETHGateway));
-        // approveMaxSpend(matic, GP());
-        approveMaxSpend(wMatic, address(WETHGateway));
-        // approveMaxSpend(address(debtToken), GP());
-        approveMaxSpend(address(aToken), address(WETHGateway)); 
+        // // Approve Aave V3 wEthGateway allowance
+        // approveMaxSpend(usdc, address(WETHGateway));
+        // // approveMaxSpend(matic, GP());
+        // approveMaxSpend(wMatic, address(WETHGateway));
+        // // approveMaxSpend(address(debtToken), GP());
+        // approveMaxSpend(address(aToken), address(WETHGateway)); 
 
         // Approve Uniswap allowance
         
@@ -90,7 +92,6 @@ contract AaveMoOn {
         approveMaxSpend(address(aToken), address(swapRouter)); 
 
 
-        approveDelegation(500e18);
     }
 
 /*________________________________________________________/
@@ -111,12 +112,15 @@ contract AaveMoOn {
         allowance_ = IERC20(wMatic).allowance(msg.sender, GP());
     }
 
+    function wMaticAllowanceContract() public view returns(uint256 allowance_) {
+        allowance_ = IERC20(wMatic).allowance(msg.sender, address(this));
+    }
+
     //\\ AToken : Fetch user aToken Balance
     function ATokenData() public view returns(uint256){
         IAToken ATokenDataBalance = IAToken(IPool(GP()).getReserveData(wMatic).aTokenAddress);
         return ATokenDataBalance.balanceOf(msg.sender);
     }
-    ///[V] Success
 
     function wMaticBalance() public view returns(uint256 balance_) {
         balance_ =  IERC20(wMatic).balanceOf(msg.sender);
@@ -159,11 +163,10 @@ contract AaveMoOn {
         IERC20(token).approve(spender, type(uint256).max);
     }
 
-    function approveDelegation(uint256 amount) public {
+    //\\ DebtToken : Approve Contract to borrow (USDC) on behalf of msg.sender
+    function approveDelegation(uint256 amount) public{
         delegationDebtToken.approveDelegation(address(this), amount);
         // delegationDebtToken.approveDelegation(GP(), amount);
-        delegationDebtToken.approveDelegation(msg.sender, amount);
-
     }
 
     //\\ Pool : Set User selected Reserve as collateral for borrowing 
@@ -183,7 +186,7 @@ contract AaveMoOn {
         IERC20(wMatic).deposit{value: msg.value}();
         balance_ = wMaticBalance();
     }
-    /// [X] TX reverted 
+    /// [~] TX pass and able to supply to Aave Pool, but wMatic.balanceOf(msg.sender) return -> value= 0;  
 
 
     //\\ ERC 20 : Unwrap wrappedMatic from source contract    
@@ -191,8 +194,6 @@ contract AaveMoOn {
         IERC20(wMatic).withdraw(type(uint).max);
         balance_ = maticBalance();
     }
-    /// [X] TX reverted 
-
 
 
 /*_________________________________________________________/
@@ -207,23 +208,18 @@ contract AaveMoOn {
         // IPool(GP()).setUserUseReserveAsCollateral(wMatic, true);
     }
     /// [V] Success : Wrap and deposit successfully native Matic on selected Pool 
-    ///(still need to check user's balance/allowance on selected pool to be sure)
 
 
     //\\  WETHGateway BorrowETH (only native ?) 
     function dGateBorrow(uint256 _amount) public {
         WETHGateway.borrowETH(GP(), _amount, 2, 0);
     }
-    // [X] TX reverted 
-
 
     //\\ WETHGateWay Withdraw Initial native ERC20 supplyied from pool
     function dGateWithdraw() public {
 
         WETHGateway.withdrawETH(GP(), type(uint256).max, msg.sender);
     }
-    /// [X] TX reverted
-
 
     //\\ Pool : Trying to borrow Usdc from Aave v3 Pool 
     function borrowUsdcFromPool(uint256 _amount) public {
@@ -247,13 +243,18 @@ contract AaveMoOn {
         // USDC borrowing from contract to pool 
         IPool(GP()).borrow(usdc, _amount, 1, 0, msg.sender);
     }
-    /// [X] TX reverted (Wrong Token/Pool Address ? Reserve not set as collat ? Not allowed to dispose of funds ?) 
-
+    /// [X] TX reverted 
+    // (Wrong Token/Pool Address ? Reserve not set as collat ? Not allowed to dispose of funds ?) 
+    //    Message Error : 
+    //    " Error: VM Exception while processing transaction: reverted with reason string '36'
+    //      at <UnrecognizedContract>.<unknown> (0x794a61358d6845594f94dc1db02a252b5b4814ad)
+    //    "
+    
     //\\ Pool : Trying to supply Matic to Aave v3 Pool 
     function supplyWMaticToPool(uint256 _amount) public { 
         IPool(GP()).supply(wMatic, _amount, msg.sender, 0);
     }
-    /// [X] TX reverted (Approval Needed ? Wrong ERC20 Address ?)
+    /// [V] TX Success
 
 
 
@@ -266,6 +267,8 @@ contract AaveMoOn {
     */    
     function letsDoItFrens(uint256 _amount) public payable returns(uint256 tokenData_){
         IPool pool = IPool(GP());
+
+        //Approve Tokens Spending
         approveMaxSpend(wMatic, address(this));
         approveMaxSpend(wMatic, msg.sender);
         approveMaxSpend(wMatic, GP());
@@ -274,15 +277,16 @@ contract AaveMoOn {
         approveMaxSpend(address(aToken), msg.sender);
         approveMaxSpend(address(aToken), GP());
 
-        approveDelegation(500e18);
+        // Approve Borrowing Contract Delegation
+        approveDelegation(600e18);
 
+
+        // Transfer Supplying amount to contract (avoid delegation ?)
         // transferWMaticToContract(_amount);
 
 
         
-        // TransferHelper.safeTransferFrom(wMatic, msg.sender, address(this), _amount);
-
-
+        // Supply wMatic to Aave V3 Pool => return equivalent aToken to msg.sender
         pool.supply(wMatic, _amount, msg.sender, 0);
 
         // setReserveAsCollateral(wMatic);
@@ -294,7 +298,7 @@ contract AaveMoOn {
         tokenData_ = ATokenData();
 
     }
-    /// [X] Reverted 
+    /// [V] TX Success
         
 
 
@@ -315,7 +319,6 @@ contract AaveMoOn {
 
         // unwrapMatic();
     }
-    /// [X] Reverted
 
 
     //\\ Uniswap 
@@ -354,6 +357,7 @@ contract AaveMoOn {
         // The call to `exactInputSingle` executes the swap.
         amountOut = swapRouter.exactInputSingle(params);
     }
+    /// [X] Reverted with "STF Error"
 
 
 }
