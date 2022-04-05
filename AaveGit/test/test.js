@@ -58,7 +58,9 @@ describe('AaveMoOn Test Contract', () => {
       const AaveMoOn = await ethers.getContractFactory("AaveMoOn");
       aaveMoOn = await AaveMoOn.deploy();
       await aaveMoOn.deployed();
-      impersonateAddress(POLYGON_WHALE);
+      // const whaleAcc = await impersonateAddress(POLYGON_WHALE);
+      // console.log(whaleAcc)
+      // aaveMoOn = await aaveMoOn.connect(whaleAcc._address);
 
       // MATIC = await ethers.getContractAt('IERC20', maticAddress);
 
@@ -238,6 +240,24 @@ describe('AaveMoOn Test Contract', () => {
         console.log("aToken balance after TX :", aTokenBalanceAfter);
 
         assert.isAbove(usdcBalanceAfter, usdcBalance, "Usdc Balance should have increase");
+      })
+    })
+
+    describe("Show differents tests logs", async () => {
+      it("shows aToken Balance", async () => {
+        const contractaTokenData = await aaveMoOn.ATokenData();
+        console.log("Contract AToken Balance:", contractaTokenData);
+
+        const useraToken = await aaveMoOn.aTokenBalance();
+        console.log("User AToken Balance:", useraToken);
+      })
+
+      it("shows debtToken Balance", async () => {
+        const debtTokenBalance = await aaveMoOn.debtTokenBalance();
+        console.log("User debtToken Balance:", debtTokenBalance);
+
+        const borrowAllowanceBalance = await aaveMoOn.borrowAllowanceBalance();
+        console.log("Contract borrow allowance debtToken Balance:", borrowAllowanceBalance);
       })
     })
 });
