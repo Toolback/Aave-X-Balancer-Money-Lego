@@ -105,7 +105,7 @@ describe('AaveMoOn Test Contract', () => {
         const wMaticBalance = await aaveMoOn.wMaticBalance();
         console.log("wMatic funds available :", ethers.utils.formatUnits(wMaticBalance, 18));
 
-        await aaveMoOn.wrapMatic({value: AMOUNT_1});
+        await aaveMoOn.wrapMatic({value: AMOUNT_500});
 
         const maticBalanceAfter = await aaveMoOn.maticBalance();
         console.log("Matic funds available after TX :", ethers.utils.formatUnits(maticBalanceAfter, 18))
@@ -194,7 +194,7 @@ describe('AaveMoOn Test Contract', () => {
         const aTokenBalance = await aaveMoOn.aTokenBalance();
         console.log("aToken funds available :", ethers.utils.formatUnits(aTokenBalance, 18));
 
-        await aaveMoOn.letsDoItFrens(AMOUNT_1);
+        await aaveMoOn.letsDoItFrens(AMOUNT_500);
 
         const maticBalanceAfter = await aaveMoOn.maticBalance();
         console.log("Matic funds available after TX :", ethers.utils.formatUnits(maticBalanceAfter, 18))
@@ -215,11 +215,19 @@ describe('AaveMoOn Test Contract', () => {
       })
     })
 
+    describe("Should Approve Borrow Delegation", async () => {
+      it("Delegate 500 credits to contract", async () => {
+        const delegate = await aaveMoOn.approveDelegation(AMOUNT_500);
+        console.log("Delegation results:", delegate.value);
+        assert.isAbove(delegate.value, 1, "should be greater than 1 (supposed 500)");
+      })
+    })
+
     describe("Borrow Allowance Balance of Contract", async () => {
       it("Should be funded", async () => {
         const allowance = await aaveMoOn.borrowAllowanceBalance();
-        console.log(allowance);
-        assert.isAbove(0, allowance, "Contract Allowance must be Funded")
+        console.log("Borrow Allowance Balance :", allowance);
+        assert.isAbove(allowance, 1, "Contract Allowance must be Funded")
       })
     })
 
@@ -231,7 +239,7 @@ describe('AaveMoOn Test Contract', () => {
         const aTokenBalance = await aaveMoOn.aTokenBalance();
         console.log("aToken balance :", aTokenBalance);
 
-        await aaveMoOn.borrowUsdcFromPool(AMOUNT_1);
+        await aaveMoOn.borrowUsdcFromPool(AMOUNT_USDC);
 
         const usdcBalanceAfter = await aaveMoOn.usdcBalance();
         console.log("Usdc Balance after TX :",usdcBalanceAfter)
@@ -258,6 +266,14 @@ describe('AaveMoOn Test Contract', () => {
 
         const borrowAllowanceBalance = await aaveMoOn.borrowAllowanceBalance();
         console.log("Contract borrow allowance debtToken Balance:", borrowAllowanceBalance);
+      })
+
+      it("shows wMatic allowance", async () => {
+        const wMaticAllowanceAave = await aaveMoOn.wMaticAllowanceAave();
+        console.log("Aave allowance wMatic Balance:", wMaticAllowanceAave);
+
+        const wMaticAllowanceContract = await aaveMoOn.wMaticAllowanceContract();
+        console.log("Contract allowance wMatic Balance:", wMaticAllowanceContract);
       })
     })
 });
