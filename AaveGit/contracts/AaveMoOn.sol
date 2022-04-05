@@ -32,19 +32,21 @@ contract AaveMoOn {
     IWETHGateway public constant WETHGateway = IWETHGateway(0x9BdB5fcc80A49640c7872ac089Cc0e00A98451B6);
 
     // Aave Tokens
-    //wMatic
+
+    // WMATIC-AToken-Polygon
     IAToken public constant aToken = IAToken(0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97); 
-    // usdc Stable Debt Token
+    // USDC-StableDebtToken-Polygon
     IStableDebtToken public constant debtToken = IStableDebtToken(0x307ffe186F84a3bc2613D1eA417A5737D69A7007);
     ICreditDelegationToken public constant delegationDebtToken = ICreditDelegationToken(0x307ffe186F84a3bc2613D1eA417A5737D69A7007);
 
     bool useAsCollateral = true;
 
     // ERC20 Tokens
-    address public constant wMatic = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
     address public constant matic = 0x0000000000000000000000000000000000001010;
-
     address public constant usdc = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
+
+    address public constant wMatic = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
+
 
     //Uniswap 
     address public constant DAI = 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063;
@@ -178,6 +180,8 @@ contract AaveMoOn {
 
     function transferWMaticToContract(uint256 amount) public payable returns(uint256 balance_) {
         IWETH(wMatic).transferFrom(msg.sender, address(this), amount);
+        contractBalance += amount;
+        
         balance_ = IERC20(wMatic).balanceOf(address(this));
     }
 
