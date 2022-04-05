@@ -30,7 +30,9 @@ contract AaveMoOn {
     IWETHGateway public constant WETHGateway = IWETHGateway(0x9BdB5fcc80A49640c7872ac089Cc0e00A98451B6);
 
     // Aave Tokens
-    IAToken public constant aToken = IAToken(0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97);
+    //wMatic
+    IAToken public constant aToken = IAToken(0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97); 
+    // usdc Stable Debt Token
     IStableDebtToken public constant debtToken = IStableDebtToken(0xF15F26710c827DDe8ACBA678682F3Ce24f2Fb56E);
     ICreditDelegationToken public constant delegationDebtToken = ICreditDelegationToken(0xF15F26710c827DDe8ACBA678682F3Ce24f2Fb56E);
 
@@ -55,6 +57,8 @@ contract AaveMoOn {
     uint256 AMOUNT_1 = 1 * 1e18;
     uint256 AMOUNT_USDC = 3 * 1e18;
     uint256 AMOUNT_500 = 500 * 1e18;
+
+    uint256 public contractBalance;
 
     constructor() {
 
@@ -86,7 +90,7 @@ contract AaveMoOn {
         approveMaxSpend(address(aToken), address(swapRouter)); 
 
 
-        approveDelegation(100);
+        approveDelegation(500e18);
     }
 
 /*________________________________________________________/
@@ -157,7 +161,7 @@ contract AaveMoOn {
 
     function approveDelegation(uint256 amount) public {
         delegationDebtToken.approveDelegation(address(this), amount);
-        delegationDebtToken.approveDelegation(GP(), amount);
+        // delegationDebtToken.approveDelegation(GP(), amount);
         delegationDebtToken.approveDelegation(msg.sender, amount);
 
     }
@@ -168,6 +172,11 @@ contract AaveMoOn {
         return true;
     }
     /// [X] TX reverted 
+
+    function transferWMaticToContract(uint256 amount) public payable returns(uint256 balance_) {
+        IWETH(wMatic).transferFrom(msg.sender, address(this), amount);
+        balance_ = IERC20(wMatic).balanceOf(address(this));
+    }
 
     //\\ ERC20 : Wrap nativeMatic from source contract 
     function wrapMatic() public payable returns(uint256 balance_) {
@@ -203,7 +212,7 @@ contract AaveMoOn {
 
     //\\  WETHGateway BorrowETH (only native ?) 
     function dGateBorrow(uint256 _amount) public {
-        WETHGateway.borrowETH(GP(), _amount, 1, 0);
+        WETHGateway.borrowETH(GP(), _amount, 2, 0);
     }
     // [X] TX reverted 
 
@@ -219,17 +228,17 @@ contract AaveMoOn {
     //\\ Pool : Trying to borrow Usdc from Aave v3 Pool 
     function borrowUsdcFromPool(uint256 _amount) public {
         // Allow Contract spending (?)
-        approveMaxSpend(usdc, address(this));
-        // approveMaxSpend(matic, address(this));
-        approveMaxSpend(wMatic, address(this));
-        approveMaxSpend(address(aToken), address(this)); 
+        // approveMaxSpend(usdc, address(this));
+        // // approveMaxSpend(matic, address(this));
+        // approveMaxSpend(wMatic, address(this));
+        // approveMaxSpend(address(aToken), address(this)); 
 
-        // Approve Aave V3 Pool allowance
-        approveMaxSpend(usdc, GP());
-        // approveMaxSpend(matic, GP());
-        approveMaxSpend(wMatic, GP());
-        // approveMaxSpend(address(debtToken), GP());
-        approveMaxSpend(address(aToken), GP()); 
+        // // Approve Aave V3 Pool allowance
+        // approveMaxSpend(usdc, GP());
+        // // approveMaxSpend(matic, GP());
+        // approveMaxSpend(wMatic, GP());
+        // // approveMaxSpend(address(debtToken), GP());
+        // approveMaxSpend(address(aToken), GP()); 
 
 
         // Allow Contract Credit Delegation
@@ -257,6 +266,21 @@ contract AaveMoOn {
     */    
     function letsDoItFrens(uint256 _amount) public payable returns(uint256 tokenData_){
         IPool pool = IPool(GP());
+        approveMaxSpend(wMatic, address(this));
+        approveMaxSpend(wMatic, msg.sender);
+        approveMaxSpend(wMatic, GP());
+
+        approveMaxSpend(address(aToken), address(this));
+        approveMaxSpend(address(aToken), msg.sender);
+        approveMaxSpend(address(aToken), GP());
+
+        approveDelegation(500e18);
+
+        // transferWMaticToContract(_amount);
+
+
+        
+        // TransferHelper.safeTransferFrom(wMatic, msg.sender, address(this), _amount);
 
 
         pool.supply(wMatic, _amount, msg.sender, 0);
@@ -306,12 +330,13 @@ contract AaveMoOn {
 
         // TransferHelper.safeApprove(matic, address(swapRouter), amountIn);
         // TransferHelper.safeApprove(matic, address(this), amountIn);
+        TransferHelper.safeApprove(matic, address(this), amountIn);
 
         // Transfer the specified amount of DAI to this contract.
         TransferHelper.safeTransferFrom(matic, msg.sender, address(this), amountIn);
 
         // Approve the router to spend DAI.
-        TransferHelper.safeApprove(wMatic, address(swapRouter), amountIn);
+        TransferHelper.safeApprove(matic, address(swapRouter), amountIn);
         // Naively set amountOutMinimum to 0. In production, use an oracle or other data source to choose a safer value for amountOutMinimum.
         // We also set the sqrtPriceLimitx96 to be 0 to ensure we swap our exact input amount.
         ISwapRouter.ExactInputSingleParams memory params =
