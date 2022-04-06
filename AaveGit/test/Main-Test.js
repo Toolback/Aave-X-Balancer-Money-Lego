@@ -2,7 +2,7 @@ const { expect } = require("chai");
 var assert = require('chai').assert
 const { ethers } = require("hardhat");
 
-const wMaticAbi = require("../contracts/abis/WMATIC.json");
+const wMaticAbi = require("../contracts/WMATIC.json");
 
 
 
