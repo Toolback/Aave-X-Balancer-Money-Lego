@@ -92,7 +92,7 @@ contract AaveXBal {
   }
 
   function withdrawFromPool(uint256 _amountToWithdraw, address _to) public payable {
-    pool.withdraw(wMatin, _amountToWithdraw, _to);
+    pool.withdraw(wMatic, _amountToWithdraw, _to);
   }
 
   function borrowFromPool(uint256 _amountToBorrow, uint8 _interestRateMode, address _onBehalfOfBorrow) public payable {
@@ -132,11 +132,11 @@ function transferFromToken(address _token, address _from, address _to, uint256 _
 
 // Wrap / Unwrap Matic
 function wrapMatic() public payable {
-  IERC20(wMatic).deposit{value: msg.value}();
+  IWETH(wMatic).deposit{value: msg.value}();
 }
 
 function unWrapWMatic() public payable {
-  IERC20(wMatic).withdraw(type(uint256).max);
+  IWETH(wMatic).withdraw(type(uint256).max);
 }
 
 // Approve Spending / Borrowing of funds 
@@ -176,7 +176,7 @@ function setMsgSender() public returns(address msgSender_) {
   }
 
   function getDebtTokenBalance(address _balanceOf) public view returns(uint256 balance_) {
-    balance_ = debtToken.principalBalanceOf(_balanceOf.sender);
+    balance_ = debtToken.principalBalanceOf(_balanceOf);
   }
 
   function getERC20Allowance(address _token, address _from, address _to) public view returns(uint256 balance_) {
