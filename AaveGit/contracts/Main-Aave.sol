@@ -31,9 +31,9 @@ contract AaveXBal {
 
   // Aave Tokens
   /// address =  WMATIC-AToken-Polygon
-  IAToken internal constant aToken = IAToken(0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97); 
+  IAToken public constant aToken = IAToken(0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97); 
   /// address = USDC-StableDebtToken-Polygon
-  IStableDebtToken internal constant debtToken = IStableDebtToken(0x307ffe186F84a3bc2613D1eA417A5737D69A7007);
+  IStableDebtToken public constant debtToken = IStableDebtToken(0x307ffe186F84a3bc2613D1eA417A5737D69A7007);
   ICreditDelegationToken internal constant delegationDebtToken = ICreditDelegationToken(0x307ffe186F84a3bc2613D1eA417A5737D69A7007);
 
   // ERC20 Tokens
@@ -41,13 +41,10 @@ contract AaveXBal {
   address public constant wMatic = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
   address public constant usdc = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
 
-  address public msgSender;
-  address public contractAddress;
 
   // uint8 InterestModeSelector;
 
   constructor() {
-    contractAddress = address(this);
     pool = IPool(GP());
   }
 
