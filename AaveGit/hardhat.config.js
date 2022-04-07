@@ -2,6 +2,8 @@
 /* global ethers task */
 require('@nomiclabs/hardhat-waffle')
 require("dotenv").config();
+require("@nomiclabs/hardhat-etherscan");
+
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -21,9 +23,9 @@ task('accounts', 'Prints the list of accounts', async () => {
  */
 
 module.exports = {
-  // etherscan: {
-  //   apiKey: process.env.POLYGON_API_KEY,
-  // },
+  etherscan: {
+    apiKey: process.env.POLYGON_API_KEY,
+  },
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
@@ -47,6 +49,7 @@ module.exports = {
       // blockGasLimit: 20000000,
       // gasPrice: 1000000000,
       timeout: 90000,
+      gas: "auto",
     },
     rinkeby: {
       url: process.env.RINKEBY_URL,
