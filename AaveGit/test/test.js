@@ -1,279 +1,142 @@
-require("hardhat");
-var assert = require('chai').assert
 const { expect } = require("chai");
+var assert = require('chai').assert
+const { ethers } = require("hardhat");
 
-// const {IERC20} = require("@aave/core-v3/contracts/dependencies/openzeppelin/contracts/IERC20.sol")
+const wMaticAbi = require("../contracts/abis/WMATIC.json");
+
+
 
 require('chai')
 .use(require('chai-as-promised'))
 .should()
 
-let POLYGON_WHALE = "0xe5D4fB304A37926e04831B22Fc6aFe931557c883"
+// Test Balance For Testing
+let userAddress;
+let contractAddress;
+let signer;
+
+// Contract Instance
+let aaveXBal;
+let wMaticContract;
+
+// Tokens Address
+let wMatic = '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270';
+let aToken = '0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97';
+let matic = '0x0000000000000000000000000000000000001010';
+let usdc = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
+let stabDebtUsdc = '0x307ffe186F84a3bc2613D1eA417A5737D69A7007';
 
 // TX Price Amount
 let AMOUNT_1 = ethers.utils.parseEther('1');
 let AMOUNT_2 = ethers.utils.parseEther('2');
 let AMOUNT_USDC = ethers.utils.parseEther('3');
 let AMOUNT_500 = ethers.utils.parseEther('500');
+let AMOUNT_1000 = ethers.utils.parseEther('1000');
+
+// Let's play =D 
+describe("Testing Aave X Balancer Contracts", async() => {
+
+  before(async() => {
+
+    // /!\ TODO : Test HardHat Signer connect w/ contract instance
+    const Signer = await ethers.getSigner();
+
+    console.log(Signer.address, "log Signer")
+    signer = await ethers.provider.getSigner(Signer.address);
 
 
-// TOFIX
-// let account
-// function getAccount(){
-//   const accounts = await ethers.getSigners()
-//   account = await accounts[0].getAddress()
+    // Deploy Contract
+    const AaveXBal = await ethers.getContractFactory("AaveXBal", Signer);
+    aaveXBal = await AaveXBal.deploy();
+    await aaveXBal.deployed();
 
-// }
-// let signer1 = ethers.provider.getSigner(account);
+    // Ether.js .Contrat || .getContractAt ?
+    wMaticContract = new ethers.Contract('0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270', wMaticAbi, Signer);
+    await wMaticContract.deployed();
 
-// Function which allows to convert any address to the signer which can sign transactions in a test
-const impersonateAddress = async (address) => {
-  const hre = require('hardhat');
-  await hre.network.provider.request({
-    method: 'hardhat_impersonateAccount',
-    params: [address],
-  });
-  const signer = await ethers.provider.getSigner(address);
-  signer.address = signer._address;
-  return signer;
-};
-// Function to increase time in mainnet fork
-async function increaseTime(value) {
-  if (!ethers.BigNumber.isBigNumber(value)) {
-    value = ethers.BigNumber.from(value);
-  }
-  await ethers.provider.send('evm_increaseTime', [value.toNumber()]);
-  await ethers.provider.send('evm_mine');
-}
-// Construction to get any contract as an object by its interface and address in blockchain
-// It is necessary to note that you must add an interface to your project
+    // Set User and Contract address for input testing
+    await aaveXBal.setMsgSender();
 
+    const user = await aaveXBal.msgSender();
+    userAddress = user;
+    console.log("// ADDRESS ??", signer._address, userAddress);
 
-describe('AaveMoOn Test Contract', () => {
-  let aaveMoOn;
-  // let maticAddress = "0x0000000000000000000000000000000000001010"
+    const contract = await aaveXBal.contractAddress();
+    contractAddress = contract;
+  })
 
-    before(async () => {
-      // Load Contract
-      const AaveMoOn = await ethers.getContractFactory("AaveMoOn");
-      aaveMoOn = await AaveMoOn.deploy();
-      await aaveMoOn.deployed();
-      // const whaleAcc = await impersonateAddress(POLYGON_WHALE);
-      // console.log(whaleAcc)
-      // aaveMoOn = await aaveMoOn.connect(whaleAcc._address);
+  describe("Wrapping Matic for testing", async() => {
 
-      // MATIC = await ethers.getContractAt('IERC20', maticAddress);
+    it("Should Wrap 500 Matic for User and Contract Balance", async() => {
+      const wMaticUserBalanceBefore = await aaveXBal.getERC20Balance(wMatic, userAddress);
+      // console.log("wMatic User Balance :", ethers.utils.formatUnits(wMaticUserBalanceBefore, 18));
 
+      const wMaticContractBalanceBefore = await aaveXBal.getERC20Balance(wMatic, contractAddress);
+      // console.log("wMatic Contract Balance :", ethers.utils.formatUnits(wMaticContractBalanceBefore, 18));
 
+      await aaveXBal.wrapMatic({value: AMOUNT_1000});
+      await aaveXBal.transferFromToken(wMatic, contractAddress, userAddress, AMOUNT_500);
 
-    });
-    describe("GP", async () => {
-      it("Should Retrieve Pool", async () => {
-        const GP = await aaveMoOn.GP();
-        console.log("Pool address ISSSS! :", GP)
-        expect(GP).to.include('0x');
-      });
-    });
+      const wMaticUserBalanceAfter = await aaveXBal.getERC20Balance(wMatic, userAddress);
+      // console.log("wMatic User Balance After TX :", ethers.utils.formatUnits(wMaticUserBalanceAfter, 18));
 
-    // describe("UniSwap ExactInput matic/wMatic", async () => {
-    //   it("Swap from Uniswap", async () => {
-    //     const maticBalance = await aaveMoOn.maticBalance();
-    //     console.log("Matic funds available :", ethers.utils.formatUnits(maticBalance, 18))
+      const wMaticContractBalanceAfter = await aaveXBal.getERC20Balance(wMatic, contractAddress);
+      // console.log("wMatic Contract Balance After TX :", ethers.utils.formatUnits(wMaticContractBalanceAfter, 18));
 
-    //     const wMaticBalance = await aaveMoOn.wMaticBalance();
-    //     console.log("wMatic funds available :", ethers.utils.formatUnits(wMaticBalance, 18));
-
-    //     await aaveMoOn.swapExactInputSingle(AMOUNT_1);
-
-    //     const maticBalanceAfter = await aaveMoOn.maticBalance();
-    //     console.log("Matic funds available after TX :", ethers.utils.formatUnits(maticBalanceAfter, 18))
-
-    //     const wMaticBalanceAfter = await aaveMoOn.wMaticBalance();
-    //     console.log("wMatic funds available after TX :", ethers.utils.formatUnits(wMaticBalanceAfter, 18));
-
-
-    //     assert.isBelow(maticBalanceAfter, maticBalance, "Balance should increase");
-    //   });
-    // });
-
-    describe("Wrap Matic from wMatic Contract", async () => {
-      it("Try to wrap from Matic Contract", async () => {
-
-        const maticBalance = await aaveMoOn.maticBalance();
-        console.log("Matic funds available :", ethers.utils.formatUnits(maticBalance, 18))
-
-        const wMaticBalance = await aaveMoOn.wMaticBalance();
-        console.log("wMatic funds available :", ethers.utils.formatUnits(wMaticBalance, 18));
-
-        await aaveMoOn.wrapMatic({value: AMOUNT_500});
-
-        const maticBalanceAfter = await aaveMoOn.maticBalance();
-        console.log("Matic funds available after TX :", ethers.utils.formatUnits(maticBalanceAfter, 18))
-
-        const wMaticBalanceAfter = await aaveMoOn.wMaticBalance();
-        console.log("wMatic funds available after TX :", ethers.utils.formatUnits(wMaticBalanceAfter, 18));
-        
-        assert.isBelow(maticBalanceAfter, maticBalance, "Balance should Decrease");
-      });
-    });
-
-
-    // describe("wMatic Balance has to be funded", async () => {
-    //   it("Fetch wMatic Balance from contract", async () => {
-    //     const wMaticBalance = await aaveMoOn.wMaticBalance();
-    //     console.log("wMatic funds available :", ethers.utils.formatUnits(wMaticBalance, 18))
-    //     assert.isAtLeast(wMaticBalance, 1, "greater or equal to 1");
-    //   });
-    // });
-
-    // describe("Matic Funds", async () => {
-    //   it("Fetch Matic Balance from contract", async () => {
-    //     const maticBalance = await aaveMoOn.maticBalance();
-    //     console.log("Matic funds available :", ethers.utils.formatUnits(maticBalance, 18))
-    //     assert.isAtLeast(maticBalance, 1, "greater or equal to 1");
-    //   });
-    // });
-
-
-    // describe("Approve wMatic allowance", async () => {
-    //   it("allow 1 token to Pool / WETHGateway", async () => {
-    //     const approveWMatic = await aaveMoOn.approveWMatic(AMOUNT_1);
-    //     console.log(approveWMatic.value, "Allowance supposed")
-    //     // assert.equal(approveSupply, true);
-    //     assert.isAtLeast(approveWMatic.value, 1, "greater or equal to 1");
-
-    //   });
-    // });
-
-    // describe("Approve Matic allowance", async () => {
-    //   it("allow 1 token to Pool / WETHGateway", async () => {
-    //     const approveMatic = await aaveMoOn.approveMatic(AMOUNT_1);
-    //     console.log(approveMatic.value, "Allowance supposed")
-    //     // assert.equal(approveSupply, true);
-    //     assert.isAtLeast(approveMatic.value, 1, "greater or equal to 1");
-
-    //   });
-    // });
-
-    // describe("WETHGateWay Deposit", async () => {
-    //   it("Should Deposit Native Matic to Aave V3 WETHGateway", async () => {
-    //     const maticBalance = await aaveMoOn.maticBalance();
-    //     console.log("Matic funds available :", ethers.utils.formatUnits(maticBalance, 18))
-
-    //     const wMaticBalance = await aaveMoOn.wMaticBalance();
-    //     console.log("wMatic funds available :", ethers.utils.formatUnits(wMaticBalance, 18));
-        
-
-
-    //     const aTokenBalance = await aaveMoOn.aTokenBalance();
-    //     console.log("aToken funds available :", ethers.utils.formatUnits(aTokenBalance, 18));
-
-
-    //     await aaveMoOn.dGateDeposit({value: AMOUNT_1});
-
-    //     const aTokenBalanceAfter = await aaveMoOn.aTokenBalance();
-    //     console.log("aToken funds available :", ethers.utils.formatUnits(aTokenBalanceAfter, 18));
-
-    //     const wMaticBalanceAfter = await aaveMoOn.wMaticBalance();
-    //     console.log("wMatic funds available after TX :", ethers.utils.formatUnits(wMaticBalanceAfter, 18));
-
-    //     const maticBalanceAfter = await aaveMoOn.maticBalance();
-    //     console.log("Matic funds available after TX :", ethers.utils.formatUnits(maticBalanceAfter, 18))
-    //     assert.isAbove(aTokenBalanceAfter, aTokenBalance, "Balance Should Decrease");
-
-    //   });
-    // });
-
-    describe("Supply to Aave V3 Pool Contract", async () => {
-      it("Should Deposit WMatic to V3 Pool Contract", async () => {
-        // await aaveMoOn.approveSupply(AMOUNT_1);
-
-        const maticBalance = await aaveMoOn.maticBalance();
-        console.log("Matic funds available :", ethers.utils.formatUnits(maticBalance, 18))
-
-        const aTokenBalance = await aaveMoOn.aTokenBalance();
-        console.log("aToken funds available :", ethers.utils.formatUnits(aTokenBalance, 18));
-
-        await aaveMoOn.letsDoItFrens(AMOUNT_500);
-
-        const maticBalanceAfter = await aaveMoOn.maticBalance();
-        console.log("Matic funds available after TX :", ethers.utils.formatUnits(maticBalanceAfter, 18))
-
-        const aTokenBalanceAfter = await aaveMoOn.aTokenBalance();
-        console.log("aToken funds available after TX :", ethers.utils.formatUnits(aTokenBalanceAfter, 18));
-
-        // assert.equal(letsDoItFrens, true);
-        assert.isAbove(aTokenBalanceAfter, aTokenBalance, "Balance Should Decrease");
-
-      });
-    });
-
-    describe("Should Approve Reserve as Collateral (Aave)", async () => {
-      it ("Allowance Should be approved", async () => {
-        const allowancebefore = await aaveMoOn.setReserveAsCollateral();
-        assert.isTrue(allowancebefore, "Tx should pass (?)")
-      })
+      assert.isAbove(wMaticContractBalanceAfter, wMaticContractBalanceBefore, "Contract Should be Funded with 500 wMatic");
+      assert.isAbove(wMaticUserBalanceAfter, wMaticUserBalanceBefore, "User Should be Funded with 500 wMatic")
     })
 
-    describe("Should Approve Borrow Delegation", async () => {
-      it("Delegate 500 credits to contract", async () => {
-        const delegate = await aaveMoOn.approveDelegation(AMOUNT_500);
-        console.log("Delegation results:", delegate.value);
-        assert.isAbove(delegate.value, 1, "should be greater than 1 (supposed 500)");
-      })
+  })
+
+
+  describe("Start on User Behalf Farming", async() => {
+
+    it("User Should Approve Pool MaxSpend", async() => {
+      const GP = await aaveXBal.GP();
+
+      const poolwMaticAllowanceBefore = await aaveXBal.getERC20Allowance(wMatic, userAddress, GP);
+      console.log("Contract wMatic Allowance of User Funds :", poolwMaticAllowanceBefore);
+
+      await wMaticContract.approve(GP, AMOUNT_500);
+  
+      const poolwMaticAllowanceAfter = await aaveXBal.getERC20Allowance(wMatic, userAddress, GP);
+      console.log("Contract wMatic Allowance of User Funds :", poolwMaticAllowanceAfter);
+
+      assert.isAbove(poolwMaticAllowanceAfter, poolwMaticAllowanceBefore, "Contract wMatic allowance of User Funds should have increase");
     })
 
-    describe("Borrow Allowance Balance of Contract", async () => {
-      it("Should be funded", async () => {
-        const allowance = await aaveMoOn.borrowAllowanceBalance();
-        console.log("Borrow Allowance Balance :", allowance);
-        assert.isAbove(allowance, 1, "Contract Allowance must be Funded")
-      })
+    it("User Should deposit 500 wMatic to Pool", async() => {
+      const useraTokenBalanceBefore = await aaveXBal.getERC20Balance(aToken, userAddress);
+
+      await aaveXBal.supplyToPool(AMOUNT_500, userAddress);
+
+      const useraTokenBalanceAfter = await aaveXBal.getERC20Balance(aToken, userAddress);
+
+      assert.isAbove(useraTokenBalanceAfter, useraTokenBalanceBefore, "aToken User's Balance should have increase");
     })
 
-    describe("Should Borrow USDC from Aave Pool", async () => {
-      it("contract a loan", async () => {
-        const usdcBalance = await aaveMoOn.usdcBalance();
-        console.log("Usdc Balance :", usdcBalance);
+    it("User Should Approve Contract Credit Delegation", async() => {
+      const delegationBalanceBefore = await aaveXBal.getBorrowAllowance(userAddress, contractAddress);
+      console.log("Contract Delegation Allowance :", delegationBalanceBefore)
 
-        const aTokenBalance = await aaveMoOn.aTokenBalance();
-        console.log("aToken balance :", aTokenBalance);
+      await aaveXBal.approveDelegation(contractAddress, AMOUNT_500);
 
-        await aaveMoOn.borrowUsdcFromPool(AMOUNT_USDC);
+      const delegationBalanceAfter = await aaveXBal.getBorrowAllowance(userAddress, contractAddress);
+      console.log("Contract Delegation Allowance :", delegationBalanceAfter)
 
-        const usdcBalanceAfter = await aaveMoOn.usdcBalance();
-        console.log("Usdc Balance after TX :",usdcBalanceAfter)
-
-        const aTokenBalanceAfter = await aaveMoOn.aTokenBalance();
-        console.log("aToken balance after TX :", aTokenBalanceAfter);
-
-        assert.isAbove(usdcBalanceAfter, usdcBalance, "Usdc Balance should have increase");
-      })
+      assert.isAbove(delegationBalanceAfter, delegationBalanceBefore, "aToken User's Balance should have increase");
     })
 
-    describe("Show differents tests logs", async () => {
-      it("shows aToken Balance", async () => {
-        const contractaTokenData = await aaveMoOn.ATokenData();
-        console.log("Contract AToken Balance:", contractaTokenData);
+    it("User Should Borrow USDC From Pool", async() => {
+      const userUsdcBalanceBefore = await aaveXBal.getERC20Allowance(usdc, userAddress);
 
-        const useraToken = await aaveMoOn.aTokenBalance();
-        console.log("User AToken Balance:", useraToken);
-      })
+      await aaveXBal.borrowFromPool(AMOUNT_USDC, 1, userAddress);
 
-      it("shows debtToken Balance", async () => {
-        const debtTokenBalance = await aaveMoOn.debtTokenBalance();
-        console.log("User debtToken Balance:", debtTokenBalance);
+      const userUsdcBalanceAfter = await aaveXBal.getERC20Allowance(usdc, userAddress);
 
-        const borrowAllowanceBalance = await aaveMoOn.borrowAllowanceBalance();
-        console.log("Contract borrow allowance debtToken Balance:", borrowAllowanceBalance);
-      })
+      assert.isAbove(userUsdcBalanceAfter, userUsdcBalanceBefore, "aToken User's Balance should have increase");
 
-      it("shows wMatic allowance", async () => {
-        const wMaticAllowanceAave = await aaveMoOn.wMaticAllowanceAave();
-        console.log("Aave allowance wMatic Balance:", wMaticAllowanceAave);
-
-        const wMaticAllowanceContract = await aaveMoOn.wMaticAllowanceContract();
-        console.log("Contract allowance wMatic Balance:", wMaticAllowanceContract);
-      })
     })
+  })
 });
