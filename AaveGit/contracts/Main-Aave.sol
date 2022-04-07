@@ -67,7 +67,7 @@ contract AaveXBal {
     address _onBehalfOfBorrow // Address of borrower 
     ) public payable {
 
-    // /!\ User Must Approve Contract to Spend Relevant Supply Amount of Token Before TX
+    // /!\ User Must Approve Contract to Spend Relevant Supply Amount of Token From Token Source Contract Before TX
 
     // Approve Borrowing from contract
     approveDelegation(_DebtToken, _onBehalfOfSupply, _amountToSupply);
