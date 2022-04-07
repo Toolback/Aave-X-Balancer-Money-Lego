@@ -72,18 +72,25 @@ contract AaveXBal {
     // Approve Borrowing from contract
     approveDelegation(_DebtToken, _onBehalfOfSupply, _amountToSupply);
 
+    
     //Start Farming (Supply (wMatic) -> Borrow (Usdc) -> Supply Borrowed (Usdc) to Balancer Pool)
+    // Supply initial Token To Aave Pool -> Set Collateral for borrowing
     supplyToPool(_tokenToSupply, _amountToSupply, _onBehalfOfSupply);
 
-    // 
+    // Borrow Usdc from Aave Pool cf. Health Factor 
     borrowFromPool(_tokenToBorrow, _amountToBorrow, _interestRateMode, _onBehalfOfBorrow);
 
-    //
+    // Supply Borrowed Usdc from Aave to Balancer Pool
+    // joinPool(poolId, sender, recipient, request);
 
 
   }
 
   function undoFarm(address _tokenToRepay, uint8 _interestRateMode, address _onBehalfOfRepay, address _tokenToWithdraw, address _to) public {
+ 
+    // Withdraw Borrowed Token + Benefits
+    // exitPool(_poolId, _sender, _recipient, _request);
+ 
     // Repay Borrowed Token Aave V3 Pool + Fees from loan;
     repayToPool(_tokenToRepay, type(uint256).max, _interestRateMode, _onBehalfOfRepay);
 
