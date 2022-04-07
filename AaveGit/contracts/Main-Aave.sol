@@ -143,12 +143,12 @@ function transferFromToken(address _token, address _from, address _to, uint256 _
 }
 
 // Wrap / Unwrap Matic
-function wrapMatic() public payable {
-  IWETH(wMatic).deposit{value: msg.value}();
+function wrapMatic(address _wTokenAddress) public payable {
+  IWETH(_wTokenAddress).deposit{value: msg.value}();
 }
 
-function unWrapWMatic() public payable {
-  IWETH(wMatic).withdraw(type(uint256).max);
+function unWrapWMatic(address _wTokenAddress) public payable {
+  IWETH(_wTokenAddress).withdraw(msg.value);
 }
 
 // Approve Spending / Borrowing of funds 
@@ -162,11 +162,6 @@ function approveDelegation(address _DebtToken, address _delegatee, uint256 _amou
 
 function setReserveAsCollateral(address _user) public {
   IPool(GP()).setUserUseReserveAsCollateral(_user, true);
-}
-
-//!\ For testing
-function setMsgSender() public returns(address msgSender_) {
-  msgSender_ = msg.sender;
 }
 
 /*________________________________________________________/
@@ -187,16 +182,16 @@ function setMsgSender() public returns(address msgSender_) {
     balance_ = IERC20(_token).balanceOf(_balanceOf);
   }
 
-  function getDebtTokenBalance(address _balanceOf) public view returns(uint256 balance_) {
-    balance_ = debtToken.principalBalanceOf(_balanceOf);
+  function getDebtTokenBalance(address _debtToken, address _balanceOf) public view returns(uint256 balance_) {
+    balance_ = IStableDebtToken(_debtToken).principalBalanceOf(_balanceOf);
   }
 
   function getERC20Allowance(address _token, address _owner, address _spender) public view returns(uint256 balance_) {
     balance_ = IERC20(_token).allowance(_owner, _spender);
   }
 
-  function getBorrowAllowance(address _from, address _to) public view returns(uint256 balance_) {
-    balance_ = delegationDebtToken.borrowAllowance(_from, _to);
+  function getBorrowAllowance(address _debtToken, address _from, address _to) public view returns(uint256 balance_) {
+    balance_ = ICreditDelegationToken(_debtToken).borrowAllowance(_from, _to);
   }
 
 }
