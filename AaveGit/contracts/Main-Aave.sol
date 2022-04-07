@@ -18,21 +18,23 @@ import '@aave/core-v3/contracts/interfaces/IAToken.sol';
 import '@aave/core-v3/contracts/interfaces/IStableDebtToken.sol';
 import '@aave/core-v3/contracts/interfaces/ICreditDelegationToken.sol';
 
+import "hardhat/console.sol";
+
 
 contract AaveXBal {
 
   // Contracts
-  IPool public pool;
-  IPoolAddressesProvider public constant IPAProvider = IPoolAddressesProvider(0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb); 
-  IPoolAddressesProviderRegistry public constant IPAPRegistry = IPoolAddressesProviderRegistry(0x770ef9f4fe897e59daCc474EF11238303F9552b6);
-  IWETHGateway public constant WETHGateway = IWETHGateway(0x9BdB5fcc80A49640c7872ac089Cc0e00A98451B6);
+  IPool internal pool;
+  IPoolAddressesProvider internal constant IPAProvider = IPoolAddressesProvider(0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb); 
+  IPoolAddressesProviderRegistry internal constant IPAPRegistry = IPoolAddressesProviderRegistry(0x770ef9f4fe897e59daCc474EF11238303F9552b6);
+  IWETHGateway internal constant WETHGateway = IWETHGateway(0x9BdB5fcc80A49640c7872ac089Cc0e00A98451B6);
 
   // Aave Tokens
   /// address =  WMATIC-AToken-Polygon
-  IAToken public constant aToken = IAToken(0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97); 
+  IAToken internal constant aToken = IAToken(0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97); 
   /// address = USDC-StableDebtToken-Polygon
-  IStableDebtToken public constant debtToken = IStableDebtToken(0x307ffe186F84a3bc2613D1eA417A5737D69A7007);
-  ICreditDelegationToken public constant delegationDebtToken = ICreditDelegationToken(0x307ffe186F84a3bc2613D1eA417A5737D69A7007);
+  IStableDebtToken internal constant debtToken = IStableDebtToken(0x307ffe186F84a3bc2613D1eA417A5737D69A7007);
+  ICreditDelegationToken internal constant delegationDebtToken = ICreditDelegationToken(0x307ffe186F84a3bc2613D1eA417A5737D69A7007);
 
   // ERC20 Tokens
   address public constant matic = 0x0000000000000000000000000000000000001010;
@@ -42,7 +44,7 @@ contract AaveXBal {
   address public msgSender;
   address public contractAddress;
 
-  uint8 InterestModeSelector;
+  // uint8 InterestModeSelector;
 
   constructor() {
     contractAddress = address(this);
@@ -56,27 +58,37 @@ contract AaveXBal {
 /______________________________________________________*/
 
   function startFarming(
-    uint256 _amountToSupply, 
-    address _onBehalfOfSupply, 
-    uint8 _interestRateMode, 
-    address _onBehalfOfBorrow
+    address _DebtToken, // Stable or Variable Debt Token Borrowed 
+    address _tokenToSupply, // Initial Pool Supply Funding 
+    uint256 _amountToSupply, // Initial Amount to Supply
+    address _onBehalfOfSupply, // Address of Supplier 
+    uint256 _amountToBorrow, // Amount to Borrow cf Health Factor
+    uint8 _interestRateMode, // 1 = Stable 2 = Variable 
+    address _onBehalfOfBorrow // Address of borrower 
     ) public payable {
-    // Approve Spending && Borrowing
-    approveMaxSpend(wMatic, _onBehalfOfSupply);
-    approveDelegation(_onBehalfOfSupply, _amountToSupply);
 
-    //Start Farming (Supply wMatic -> Borrow Usdc -> Supply Borrowed Usdc)
-    supplyToPool(_amountToSupply, _onBehalfOfSupply);
-    uint256 amountToBorrow = _amountToSupply / 3;
-    borrowFromPool(amountToBorrow, _interestRateMode, _onBehalfOfBorrow);
+    // /!\ User Must Approve Contract to Spend Relevant Supply Amount of Token Before TX
 
-    InterestModeSelector = _interestRateMode;
+    // Approve Borrowing from contract
+    approveDelegation(_DebtToken, _onBehalfOfSupply, _amountToSupply);
+
+    //Start Farming (Supply (wMatic) -> Borrow (Usdc) -> Supply Borrowed (Usdc) to Balancer Pool)
+    supplyToPool(_tokenToSupply, _amountToSupply, _onBehalfOfSupply);
+
+    // 
+    borrowFromPool(_tokenToBorrow, _amountToBorrow, _interestRateMode, _onBehalfOfBorrow);
+
+    //
+
+
   }
 
-  function undoFarm(address _onBehalfOfRepay, address _to) public {
-    repayToPool(type(uint256).max, InterestModeSelector, _onBehalfOfRepay);
+  function undoFarm(address _tokenToRepay, uint8 _interestRateMode, address _onBehalfOfRepay, address _tokenToWithdraw, address _to) public {
+    // Repay Borrowed Token Aave V3 Pool + Fees from loan;
+    repayToPool(_tokenToRepay, type(uint256).max, _interestRateMode, _onBehalfOfRepay);
 
-    withdrawFromPool(type(uint256).max, _to);
+    // Withdraw Initial Token + Benefits
+    withdrawFromPool(_tokenToWithdraw, type(uint256).max, _to);
   }
 
 
@@ -85,24 +97,24 @@ contract AaveXBal {
 /                    /Main (mano)                        /
 /______________________________________________________*/
 
-  function supplyToPool(uint256 _amountToSupply, address _onBehalfOfSupply) public payable {
+  function supplyToPool(address _tokenToSupply, uint256 _amountToSupply, address _onBehalfOfSupply) public payable {
     // Supply _amount of wMatic _onBehalfOfSupply to Aave Pool V3 Protocol
     /// (asset, amount, onBehalfOf, referralCode)
-    pool.supply(wMatic, _amountToSupply, _onBehalfOfSupply, 0);    
+    pool.supply(_tokenToSupply, _amountToSupply, _onBehalfOfSupply, 0);    
   }
 
-  function withdrawFromPool(uint256 _amountToWithdraw, address _to) public payable {
-    pool.withdraw(wMatic, _amountToWithdraw, _to);
+  function withdrawFromPool(address _tokenToWithdraw, uint256 _amountToWithdraw, address _to) public payable {
+    pool.withdraw(_tokenToWithdraw, _amountToWithdraw, _to);
   }
 
-  function borrowFromPool(uint256 _amountToBorrow, uint8 _interestRateMode, address _onBehalfOfBorrow) public payable {
+  function borrowFromPool(address _tokenToBorrow, uint256 _amountToBorrow, uint8 _interestRateMode, address _onBehalfOfBorrow) public payable {
     // Borrow InitialFunds/3 Usdc from Aave Pool
     // (asset, amount, interestRateMode, referralCode, onBehalfOf)
-    pool.borrow(usdc, _amountToBorrow, _interestRateMode, 0, _onBehalfOfBorrow);
+    pool.borrow(_tokenToBorrow, _amountToBorrow, _interestRateMode, 0, _onBehalfOfBorrow);
   }
 
-  function repayToPool(uint256 _amountToRepay, uint8 _interestRateMode, address _onBehalfOfRepay) public payable {
-    pool.repay(usdc, _amountToRepay, _interestRateMode, _onBehalfOfRepay);
+  function repayToPool(address _tokenToWithdraw, uint256 _amountToRepay, uint8 _interestRateMode, address _onBehalfOfRepay) public payable {
+    pool.repay(_tokenToRepay, _amountToRepay, _interestRateMode, _onBehalfOfRepay);
   }
 
   //\\ WETHGateway for wrapping native ERC20, using deprecated 'deposit' function instead of 'supply' from pool 
@@ -144,8 +156,8 @@ function approveMaxSpend(address _token, address _spender) public {
   IERC20(_token).approve(_spender, type(uint256).max);
 }
 
-function approveDelegation(address _delegatee, uint256 _amount) public {
-  delegationDebtToken.approveDelegation(_delegatee, _amount);
+function approveDelegation(address _DebtToken, address _delegatee, uint256 _amount) public {
+  ICreditDelegationToken(_DebtToken).approveDelegation(_delegatee, _amount);
 }
 
 function setReserveAsCollateral(address _user) public {
@@ -162,11 +174,11 @@ function setMsgSender() public returns(address msgSender_) {
 /______________________________________________________*/
 
   // Fetch Pool(s)
-  function GP() internal view returns(address pool_) {
+  function GP() public view returns(address pool_) {
     pool_ = IPAProvider.getPool();
   }
 
-  function getListofPools() public view returns(address[] memory) {
+  function getListofPools() view returns(address[] memory) {
       return IPAPRegistry.getAddressesProvidersList();
   }
 
@@ -179,8 +191,8 @@ function setMsgSender() public returns(address msgSender_) {
     balance_ = debtToken.principalBalanceOf(_balanceOf);
   }
 
-  function getERC20Allowance(address _token, address _from, address _to) public view returns(uint256 balance_) {
-    balance_ = IERC20(_token).allowance(_from, _to);
+  function getERC20Allowance(address _token, address _owner, address _spender) public view returns(uint256 balance_) {
+    balance_ = IERC20(_token).allowance(_owner, _spender);
   }
 
   function getBorrowAllowance(address _from, address _to) public view returns(uint256 balance_) {
