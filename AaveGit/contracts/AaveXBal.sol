@@ -5,6 +5,9 @@ pragma abicoder v2;
 // replace ALCHEMY_URL in .env file
 // run : npx hardhat test
 
+///////////////////////////////////////////////////////////////
+// TODO : DelegateCall for 
+
 // Aave Contracts Interfaces
 import '@aave/core-v3/contracts/interfaces/IPool.sol';
 import '@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol';
@@ -18,10 +21,13 @@ import '@aave/core-v3/contracts/interfaces/IAToken.sol';
 import '@aave/core-v3/contracts/interfaces/IStableDebtToken.sol';
 import '@aave/core-v3/contracts/interfaces/ICreditDelegationToken.sol';
 
+// Balancer Protocol
+import './BalancerPool.sol';
+
 import "hardhat/console.sol";
 
 
-contract AaveXBal {
+contract AaveXBal is Balancer {
 
   // Contracts
   IPool internal pool;
@@ -61,13 +67,18 @@ contract AaveXBal {
     address _onBehalfOfSupply, // Address of Supplier 
     uint256 _amountToBorrow, // Amount to Borrow cf Health Factor
     uint8 _interestRateMode, // 1 = Stable 2 = Variable 
-    address _onBehalfOfBorrow // Address of borrower 
+    address _onBehalfOfBorrow,
+    bytes32 _poolId,
+    address _sender,
+    address _recipient,
+    JoinPoolRequest memory _request // Address of borrower 
     ) public payable {
 
     // /!\ User Must Approve Contract to Spend Relevant Supply Amount of Token From Token Source Contract Before TX
-
+    // /!\ Same For Delegate Borrowing to contract ? (from Debt Token Source Contract)
+   
     // Approve Borrowing from contract
-    approveDelegation(_DebtToken, _onBehalfOfSupply, _amountToSupply);
+    // approveDelegation(_DebtToken, _onBehalfOfSupply, _amountToSupply);
 
     
     //Start Farming (Supply (wMatic) -> Borrow (Usdc) -> Supply Borrowed (Usdc) to Balancer Pool)
@@ -78,15 +89,25 @@ contract AaveXBal {
     borrowFromPool(_tokenToBorrow, _amountToBorrow, _interestRateMode, _onBehalfOfBorrow);
 
     // Supply Borrowed Usdc from Aave to Balancer Pool
-    // joinPool(poolId, sender, recipient, request);
+    joinPool(_poolId, _sender, _recipient, _request);
 
 
   }
 
-  function undoFarm(address _tokenToRepay, uint8 _interestRateMode, address _onBehalfOfRepay, address _tokenToWithdraw, address _to) public {
+  function undoFarm(
+    address _tokenToRepay, 
+    uint8 _interestRateMode, 
+    address _onBehalfOfRepay, 
+    address _tokenToWithdraw, 
+    address _to,
+    bytes32 _poolId,
+    address _sender,
+    address _recipient,
+    ExitPoolRequest memory request
+    ) public {
  
     // Withdraw Borrowed Token + Benefits
-    // exitPool(_poolId, _sender, _recipient, _request);
+    exitPool(_poolId, _sender, _recipient, _request);
  
     // Repay Borrowed Token Aave V3 Pool + Fees from loan;
     repayToPool(_tokenToRepay, type(uint256).max, _interestRateMode, _onBehalfOfRepay);
