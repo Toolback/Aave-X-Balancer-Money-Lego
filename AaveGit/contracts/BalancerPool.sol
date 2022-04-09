@@ -2,8 +2,7 @@ pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
 import "@balancer-labs/v2-vault/contracts/interfaces/IVault.sol";
-
-contract Balancer {
+contract BalancerPool {
     IVault internal immutable Vault;
 
     constructor() {
@@ -21,7 +20,7 @@ contract Balancer {
         bytes32 poolId,
         address sender,
         address recipient,
-        JoinPoolRequest memory request
+        IVault.JoinPoolRequest memory request
     ) public payable {
         Vault.joinPool(poolId, sender, recipient, request);
     }
@@ -41,7 +40,7 @@ contract Balancer {
         bytes32 poolId,
         address sender,
         address payable recipient,
-        ExitPoolRequest memory request
+        IVault.ExitPoolRequest memory request
     ) public {
         Vault.exitPool(poolId, sender, recipient, request);
     }
