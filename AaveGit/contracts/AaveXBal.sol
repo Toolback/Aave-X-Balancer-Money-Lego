@@ -29,7 +29,7 @@ import './BalancerPool.sol';
 import "hardhat/console.sol";
 
 
-contract AaveXBal is Balancer {
+contract AaveXBal is BalancerPool {
 
   // Contracts
   IPool internal pool;
@@ -52,8 +52,13 @@ contract AaveXBal is Balancer {
 
   // uint8 InterestModeSelector;
 
+  address public contractAddress;
+  address public userAddress;
+
   constructor() {
     pool = IPool(GP());
+
+    contractAddress = address(this);
   }
 
 
@@ -74,7 +79,7 @@ contract AaveXBal is Balancer {
     bytes32 _poolId,
     address _sender,
     address _recipient,
-    JoinPoolRequest memory _request // Address of borrower 
+    IVault.JoinPoolRequest memory _request // Address of borrower 
     ) public payable {
 
     // /!\ User Must Approve Contract to Spend Relevant Supply Amount of Token From Token Source Contract Before TX
@@ -101,7 +106,7 @@ contract AaveXBal is Balancer {
     bytes32 _poolId,
     address _sender,
     address payable _recipient,
-    ExitPoolRequest memory _request,
+    IVault.ExitPoolRequest memory _request,
     address _tokenToRepay, 
     uint8 _interestRateMode, 
     address _onBehalfOfRepay, 
@@ -190,6 +195,10 @@ function approveDelegation(address _DebtToken, address _delegatee, uint256 _amou
 
 function setReserveAsCollateral(address _user) public {
   IPool(GP()).setUserUseReserveAsCollateral(_user, true);
+}
+
+function setUserAddress() public {
+  userAddress = msg.sender;
 }
 
 /*________________________________________________________/
