@@ -1,5 +1,7 @@
+// SPDX-License-Identifier: UNLICENSED
+
 pragma solidity ^0.8.0;
-pragma abicoder v2;
+pragma experimental ABIEncoderV2;
 
 // Polygon Mainnet Fork
 // replace ALCHEMY_URL in .env file
@@ -65,6 +67,7 @@ contract AaveXBal is Balancer {
     address _tokenToSupply, // Initial Pool Supply Funding 
     uint256 _amountToSupply, // Initial Amount to Supply
     address _onBehalfOfSupply, // Address of Supplier 
+    address _tokenToBorrow,
     uint256 _amountToBorrow, // Amount to Borrow cf Health Factor
     uint8 _interestRateMode, // 1 = Stable 2 = Variable 
     address _onBehalfOfBorrow,
@@ -93,17 +96,17 @@ contract AaveXBal is Balancer {
 
 
   }
-
+  // address PAYABLE _sender ? \\
   function undoFarm(
+    bytes32 _poolId,
+    address _sender,
+    address payable _recipient,
+    ExitPoolRequest memory _request,
     address _tokenToRepay, 
     uint8 _interestRateMode, 
     address _onBehalfOfRepay, 
     address _tokenToWithdraw, 
-    address _to,
-    bytes32 _poolId,
-    address _sender,
-    address _recipient,
-    ExitPoolRequest memory request
+    address _to
     ) public {
  
     // Withdraw Borrowed Token + Benefits
@@ -138,7 +141,7 @@ contract AaveXBal is Balancer {
     pool.borrow(_tokenToBorrow, _amountToBorrow, _interestRateMode, 0, _onBehalfOfBorrow);
   }
 
-  function repayToPool(address _tokenToWithdraw, uint256 _amountToRepay, uint8 _interestRateMode, address _onBehalfOfRepay) public payable {
+  function repayToPool(address _tokenToRepay, uint256 _amountToRepay, uint8 _interestRateMode, address _onBehalfOfRepay) public payable {
     pool.repay(_tokenToRepay, _amountToRepay, _interestRateMode, _onBehalfOfRepay);
   }
 
@@ -198,7 +201,7 @@ function setReserveAsCollateral(address _user) public {
     pool_ = IPAProvider.getPool();
   }
 
-  function getListofPools() view returns(address[] memory) {
+  function getListofPools() public view returns(address[] memory) {
       return IPAPRegistry.getAddressesProvidersList();
   }
 
