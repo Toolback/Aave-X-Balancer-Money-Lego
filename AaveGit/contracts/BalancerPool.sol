@@ -1,6 +1,7 @@
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
+pragma experimental ABIEncoderV2;
 
-import 'https://github.com/balancer-labs/balancer-v2-monorepo/blob/weighted-deployment/contracts/vault/interfaces/IVault.sol';
+import "@balancer-labs/v2-vault/contracts/interfaces/IVault.sol";
 
 contract Balancer {
     IVault internal immutable Vault;
@@ -22,7 +23,11 @@ contract Balancer {
         address recipient,
         JoinPoolRequest memory request
     ) public payable {
-        Vault.joinPool();
+        Vault.joinPool(poolId, sender, recipient, request);
+    }
+
+    function GPT(bytes32 _poolId) public view {
+        Vault.getPoolTokens(_poolId);
     }
 
     struct ExitPoolRequest {
@@ -38,6 +43,6 @@ contract Balancer {
         address payable recipient,
         ExitPoolRequest memory request
     ) public {
-        Vault.exitPool();
+        Vault.exitPool(poolId, sender, recipient, request);
     }
 }
