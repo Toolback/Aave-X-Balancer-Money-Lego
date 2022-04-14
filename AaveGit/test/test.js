@@ -150,7 +150,6 @@ describe("Testing Aave X Balancer Contracts", async() => {
       assert.isAbove(wMaticContractBalanceAfter, wMaticContractBalanceBefore, "Contract Should be Funded with 500 wMatic");
       assert.isAbove(wMaticUserBalanceAfter, wMaticUserBalanceBefore, "User Should be Funded with 500 wMatic")
     })
-
   })
 
 
@@ -185,7 +184,6 @@ describe("Testing Aave X Balancer Contracts", async() => {
 
       assert.isAbove(useraTokenBalanceAfter, useraTokenBalanceBefore, "aToken User's Balance should have increase");
       // await aaveXBal.transferFromToken(aToken, contractAddress, userAddress, AMOUNT_500);
-
     })
 
 
@@ -255,12 +253,12 @@ describe("Testing Aave X Balancer Contracts", async() => {
     })
 
     it("should Approve Balancer Pool to Spend Borrowed Usdc", async() => {
-      const poolUSDCAllowanceBefore = await aaveXBal.getERC20Allowance(wMatic, contractAddress, "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
+      const poolUSDCAllowanceBefore = await aaveXBal.getERC20Allowance(usdc, contractAddress, "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
       console.log("Pool Usdc Allowance of User Funds :", poolUSDCAllowanceBefore);
 
-      await aaveXBal.approveMaxSpend(wMatic, "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
+      await aaveXBal.approveMaxSpend(usdc, "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
 
-      const poolUSDCAllowanceAfter = await aaveXBal.getERC20Allowance(wMatic, contractAddress, "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
+      const poolUSDCAllowanceAfter = await aaveXBal.getERC20Allowance(usdc, contractAddress, "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
       console.log("Pool Usdc Allowance of User Funds :", poolUSDCAllowanceAfter);
 
       assert.isAbove(poolUSDCAllowanceAfter, poolUSDCAllowanceBefore, "Balancer Pool Usdc allowance of User Funds should have increase");
@@ -269,16 +267,17 @@ describe("Testing Aave X Balancer Contracts", async() => {
     it("User should supply borrowed Usdc to Balancer Pool", async () => {
       const userUsdcBalanceBefore = await aaveXBal.getERC20Balance(usdc, userAddress);
       
-      const JoinKindInit = 0;
-      const initBalances = [1e18, 2e18];
-      const abi = ['uint256', 'uint256[]'];
-      const data = [JoinKindInit, initBalances];
+      const TOKEN_IN_FOR_EXACT_BPT_OUT = 5e6;
+      const bptAmountOut = 5e6;
+      const enterTokenIndex = 1;
+      const abi = ['uint256', 'uint256', 'uint256'];
+      const data = [TOKEN_IN_FOR_EXACT_BPT_OUT, bptAmountOut, enterTokenIndex];
       const userDataEncoded = defaultAbiCoder.encode(abi,data);
 
       // JoinPoolRequest ( address[] assets, uint256[] maxAmountsIn, bytes userData, bool fromInternalBalance )
       const requestEncoded = ([usdc], [5000000], userDataEncoded, false);
 
-      await aaveXBal.joinPool("0x06df3b2bbb68adc8b0e302443692037ed9f91b42000000000000000000000012", contractAddress, userAddress, requestEncoded)
+      await aaveXBal.joinPool("0x06df3b2bbb68adc8b0e302443692037ed9f91b42000000000000000000000012", userAddress, userAddress, requestEncoded)
    
       const userUsdcBalanceAfter = await aaveXBal.getERC20Balance(usdc, userAddress);;
       console.log("User USDC Balancer After Borrowing:", userUsdcBalanceAfter);
