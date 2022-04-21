@@ -7,37 +7,16 @@ const debtTokenContractAbi = require('../contracts/abis/DebtTokenBase.json');
 const aTokenAbi = require('@aave/core-v3/artifacts/contracts/protocol/tokenization/AToken.sol/AToken.json')
 const VaultABI = require('@aave/core-v3/artifacts/contracts/protocol/pool/Pool.sol/Pool.json');
 
-const {
-
-  ConstructorFragment,
-  EventFragment,
-  Fragment,
-  FunctionFragment,
-  ParamType,
-  FormatTypes,
-
-  AbiCoder,
-  defaultAbiCoder,
-
-  Interface,
-  Indexed,
-
-  /////////////////////////
-  // Types
-
-  CoerceFunc,
-  JsonFragment,
-  JsonFragmentType,
-
-  Result,
-  checkResultErrors,
-
-  LogDescription,
-  TransactionDescription
-
-} = require("@ethersproject/abi");
+const {defaultAbiCoder} = require("@ethersproject/abi");
 // const { formatUserSummaryAndIncentives } require '@aave/math-utils';
 // import dayjs from 'dayjs';
+const {getPoolAddress} = require("@balancer-labs/balancer-js");
+// import { IERC20Abi } from ./IERC20.json
+
+const poolId = "0x06df3b2bbb68adc8b0e302443692037ed9f91b42000000000000000000000012"
+const poolAddress = getPoolAddress(poolId)
+// poolAddress = "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56"
+
 
 
 require('chai')
@@ -58,6 +37,7 @@ let wMaticContract;
 let debtTokenContract;
 let aTokenContract;
 let GP;
+let bptContract;
 
 // Tokens Address
 let wMatic = '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270';
@@ -72,7 +52,7 @@ let WIETH = "0x9BdB5fcc80A49640c7872ac089Cc0e00A98451B6"
 // TX Price Amount
 let AMOUNT_1 = ethers.utils.parseEther('1');
 let AMOUNT_2 = ethers.utils.parseEther('2');
-let AMOUNT_USDC = ethers.utils.formatUnits(5, 6);
+let AMOUNT_USDC = ethers.BigNumber.from("5");
 let AMOUNT_500 = ethers.utils.parseEther('500');
 let AMOUNT_700 = ethers.utils.parseEther('700');
 
@@ -86,7 +66,6 @@ describe("Testing Aave X Balancer Contracts", async() => {
     // console.log("Pool ADDRESS",GP);
 
 
-    // /!\ TODO : Test HardHat Signer connect w/ contract instance
     Signer = await ethers.getSigner();
 
     // console.log(Signer.address, "Signer details")
@@ -113,6 +92,10 @@ describe("Testing Aave X Balancer Contracts", async() => {
 
     aTokenContract = new ethers.Contract('0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97', aTokenAbi, Signer);
     await aTokenContract.deployed();
+
+    bptContract = new ethers.Contract(poolAddress, wMaticAbi, Signer);
+    await bptContract.deployed()
+
 
     VaultContract = new ethers.Contract('0x794a61358D6845594F94dc1DB02A252b5b4814aD', VaultABI, Signer);
     await VaultContract.deployed();
@@ -267,25 +250,36 @@ describe("Testing Aave X Balancer Contracts", async() => {
       assert.isAbove(poolUSDCAllowanceAfter, poolUSDCAllowanceBefore, "Balancer Pool Usdc allowance of User Funds should have increase");
     })
 
+    // it("Should Retrieve Pool Id", async () => {
+    //   const GPI = await aaveXBal.getPoolId("0x06df3b2bbb68adc8b0e302443692037ed9f91b42")
+
+    //   console.log("Pool Id Is :", GPI);
+    // })
+
     it("Should retrieve Pool Tokens", async () => {
       
-      const GPT = await aaveXBal.GPT("0x06df3b2bbb68adc8b0e302443692037ed9f91b42000000000000000000000012")
+      const GPT = await aaveXBal.GPT(poolId)
       console.log("Pool Tokens", GPT);
+    })
+
+    it("should Approve Contract to BPT", async () => {
+      await bptContract.approve(contractAddress, "10000000")
+
     })
 
     it("User should supply borrowed Usdc to Balancer Pool", async () => {
       const userUsdcBalanceBefore = await aaveXBal.getERC20Balance(usdc, userAddress);
       
-      // const JoinKindInit = 0;
-      const TOKEN_IN_FOR_EXACT_BPT_OUT = 5e6;
-      const bptAmountOut = 5e6;
-      const enterTokenIndex = 1;
-      const abi = ['uint256','uint256', 'uint256', 'uint256'];
+      const TOKEN_IN_FOR_EXACT_BPT_OUT = AMOUNT_USDC;
+      console.log('TOKEN_IN_FOR_EXACT_BPT_OUT', TOKEN_IN_FOR_EXACT_BPT_OUT)
+      const bptAmountOut = AMOUNT_USDC;
+      const enterTokenIndex = 0;
+      const abi = ['uint256', 'uint256', 'uint256'];
       const data = [TOKEN_IN_FOR_EXACT_BPT_OUT, bptAmountOut, enterTokenIndex];
       const userDataEncoded = defaultAbiCoder.encode(abi,data);
 
       // JoinPoolRequest ( address[] assets, uint256[] maxAmountsIn, bytes userData, bool fromInternalBalance )
-      const requestEncoded = ([usdc, dai, mai, usdt], [5e6, , ,], userDataEncoded, false);
+      const requestEncoded = {assets:[usdc, dai, mai, usdt], maxAmountsIn:[AMOUNT_USDC, 0, 0, 0], userData:userDataEncoded, fromInternalBalance:false};
 
       await aaveXBal.joinPool("0x06df3b2bbb68adc8b0e302443692037ed9f91b42000000000000000000000012", userAddress, userAddress, requestEncoded)
    
