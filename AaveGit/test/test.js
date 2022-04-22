@@ -15,7 +15,10 @@ const {getPoolAddress} = require("@balancer-labs/balancer-js");
 
 const poolId = "0x06df3b2bbb68adc8b0e302443692037ed9f91b42000000000000000000000012"
 const poolAddress = getPoolAddress(poolId)
-// poolAddress = "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56"
+console.log("PoolAddress from Balancer:", poolAddress);
+// poolAddress = "0x06df3b2bbb68adc8b0e302443692037ed9f91b42"
+
+const balancerVaultABI = require("./balancerVaultAbi.json")
 
 
 
@@ -38,6 +41,7 @@ let debtTokenContract;
 let aTokenContract;
 let GP;
 let bptContract;
+let balancerVault;
 
 // Tokens Address
 let wMatic = '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270';
@@ -53,6 +57,8 @@ let WIETH = "0x9BdB5fcc80A49640c7872ac089Cc0e00A98451B6"
 let AMOUNT_1 = ethers.utils.parseEther('1');
 let AMOUNT_2 = ethers.utils.parseEther('2');
 let AMOUNT_USDC = ethers.BigNumber.from("5");
+let AMOUNT_USDCMAX = ethers.BigNumber.from("500");
+
 let AMOUNT_500 = ethers.utils.parseEther('500');
 let AMOUNT_700 = ethers.utils.parseEther('700');
 
@@ -93,10 +99,15 @@ describe("Testing Aave X Balancer Contracts", async() => {
     aTokenContract = new ethers.Contract('0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97', aTokenAbi, Signer);
     await aTokenContract.deployed();
 
+    // Balancer Pool
     bptContract = new ethers.Contract(poolAddress, wMaticAbi, Signer);
     await bptContract.deployed()
 
+    // Balancer Vault
+    balancerVault = new ethers.Contract('0xBA12222222228d8Ba445958a75a0704d566BF2C8', balancerVaultABI, Signer);
+    await balancerVault.deployed();
 
+    // AavePool
     VaultContract = new ethers.Contract('0x794a61358D6845594F94dc1DB02A252b5b4814aD', VaultABI, Signer);
     await VaultContract.deployed();
 
@@ -105,7 +116,7 @@ describe("Testing Aave X Balancer Contracts", async() => {
 
     const user = await aaveXBal.userAddress();
     userAddress = user;
-    // console.log("// ADDRESS Signer / User ??", signer._address, userAddress);
+    // console.log("// ADDRESS Signer / User ??", Signer.address, Signer, signer, signer._address, userAddress);
 
     const contract = await aaveXBal.contractAddress();
     contractAddress = contract;
@@ -229,10 +240,10 @@ describe("Testing Aave X Balancer Contracts", async() => {
       await VaultContract.borrow(usdc, 10000000, 1, 0, userAddress);
 
       const userUsdcBalanceAfter = await aaveXBal.getERC20Balance(usdc, userAddress);;
-      console.log("User USDC Balancer After Borrowing:",  ethers.utils.formatUnits(userUsdcBalanceAfter, 6));
+      console.log("User USDC Balance After Borrowing:",  ethers.utils.formatUnits(userUsdcBalanceAfter, 6));
 
       const contractUsdcBalanceAfter = await aaveXBal.getERC20Balance(usdc, contractAddress);;
-      console.log("User USDC Balancer After Borrowing:",  ethers.utils.formatUnits(contractUsdcBalanceAfter, 6));
+      console.log("User USDC Balance After Borrowing:",  ethers.utils.formatUnits(contractUsdcBalanceAfter, 6));
 
       assert.isAbove(userUsdcBalanceAfter, userUsdcBalanceBefore, "Usdc User's Balance should have increase");
 
@@ -243,6 +254,11 @@ describe("Testing Aave X Balancer Contracts", async() => {
       console.log("Pool Usdc Allowance of User Funds :", poolUSDCAllowanceBefore);
 
       await aaveXBal.approveMaxSpend(usdc, "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
+      await aaveXBal.approveMaxSpend(usdc, contractAddress);
+      await aaveXBal.approveMaxSpend(usdc, poolAddress);
+      await aaveXBal.approveMaxSpend(usdc, userAddress)
+
+
 
       const poolUSDCAllowanceAfter = await aaveXBal.getERC20Allowance(usdc, contractAddress, "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
       console.log("Pool Usdc Allowance of User Funds :", poolUSDCAllowanceAfter);
@@ -259,21 +275,50 @@ describe("Testing Aave X Balancer Contracts", async() => {
     it("Should retrieve Pool Tokens", async () => {
       
       const GPT = await aaveXBal.GPT(poolId)
-      console.log("Pool Tokens", GPT);
+      console.log("Pool Tokens", GPT); // Return 0 values, why ? :/
     })
 
     it("should Approve Contract to BPT", async () => {
-      await bptContract.approve(contractAddress, "10000000")
+      await bptContract.approve(userAddress, "100000000000000000000000000000000000000")
+      await bptContract.approve(contractAddress, "100000000000000000000000000000000000000" )
+      await bptContract.approve(poolAddress, "100000000000000000000000000000000000000")
+      await bptContract.approve("0xBA12222222228d8Ba445958a75a0704d566BF2C8", "100000000000000000000000000000000000000" )
+      
+      const BalancerAllowance = await aaveXBal.getERC20Allowance(poolAddress, userAddress, "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
+      console.log("Allowance for BPT Token spending:", BalancerAllowance);
+    })
 
+    it("should set Contract as Relayer", async () => {
+
+
+      await balancerVault.setRelayerApproval(userAddress, contractAddress, true);
+      await aaveXBal.setRelayerApproval(userAddress, contractAddress, true);
+
+    })
+
+    it("should Increase Allowance BPT", async () => {
+      await bptContract.increaseAllowance(userAddress, "100000000000000000000000000000000000000")
+      await bptContract.increaseAllowance(contractAddress, "100000000000000000000000000000000000000" )
+      await bptContract.increaseAllowance(poolAddress, "100000000000000000000000000000000000000")
+      await bptContract.increaseAllowance("0xBA12222222228d8Ba445958a75a0704d566BF2C8", "100000000000000000000000000000000000000" )
+
+    })
+
+    it("should Approve Contract to BPT", async () => {
+
+      await aaveXBal.approveMaxSpend(poolAddress, userAddress)
+      await aaveXBal.approveMaxSpend(poolAddress, "0xBA12222222228d8Ba445958a75a0704d566BF2C8")
+      await aaveXBal.approveMaxSpend(poolAddress, contractAddress)
+      await aaveXBal.approveMaxSpend(poolAddress, poolAddress)
     })
 
     it("User should supply borrowed Usdc to Balancer Pool", async () => {
       const userUsdcBalanceBefore = await aaveXBal.getERC20Balance(usdc, userAddress);
       
-      const TOKEN_IN_FOR_EXACT_BPT_OUT = AMOUNT_USDC;
+      const TOKEN_IN_FOR_EXACT_BPT_OUT = AMOUNT_USDC; // 5.0 usdc
       console.log('TOKEN_IN_FOR_EXACT_BPT_OUT', TOKEN_IN_FOR_EXACT_BPT_OUT)
       const bptAmountOut = AMOUNT_USDC;
-      const enterTokenIndex = 0;
+      const enterTokenIndex = 1;
       const abi = ['uint256', 'uint256', 'uint256'];
       const data = [TOKEN_IN_FOR_EXACT_BPT_OUT, bptAmountOut, enterTokenIndex];
       const userDataEncoded = defaultAbiCoder.encode(abi,data);
