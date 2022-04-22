@@ -7,11 +7,12 @@ const debtTokenContractAbi = require('../contracts/abis/DebtTokenBase.json');
 const aTokenAbi = require('@aave/core-v3/artifacts/contracts/protocol/tokenization/AToken.sol/AToken.json')
 const VaultABI = require('@aave/core-v3/artifacts/contracts/protocol/pool/Pool.sol/Pool.json');
 
-const {defaultAbiCoder} = require("@ethersproject/abi");
+const { defaultAbiCoder } = require("@ethersproject/abi");
 // const { formatUserSummaryAndIncentives } require '@aave/math-utils';
 // import dayjs from 'dayjs';
-const {getPoolAddress} = require("@balancer-labs/balancer-js");
+const { getPoolAddress } = require("@balancer-labs/balancer-js");
 // import { IERC20Abi } from ./IERC20.json
+const { StablePoolEncoder } = require("@balancer-labs/balancer-js");
 
 const poolId = "0x06df3b2bbb68adc8b0e302443692037ed9f91b42000000000000000000000012"
 const poolAddress = getPoolAddress(poolId)
@@ -23,8 +24,8 @@ const balancerVaultABI = require("./balancerVaultAbi.json")
 
 
 require('chai')
-.use(require('chai-as-promised'))
-.should()
+  .use(require('chai-as-promised'))
+  .should()
 
 // Test Balance For Testing
 let userAddress;
@@ -63,11 +64,13 @@ let AMOUNT_500 = ethers.utils.parseEther('500');
 let AMOUNT_700 = ethers.utils.parseEther('700');
 
 let AMOUNT_1000 = ethers.utils.parseEther('1000');
+let AMOUNT_BPT_OUT = ethers.utils.parseEther('4');
+let AMOUNT_BPT_APPROVE = ethers.utils.parseEther('100')
 
 // Let's play =D 
-describe("Testing Aave X Balancer Contracts", async() => {
+describe("Testing Aave X Balancer Contracts", async () => {
 
-  before(async() => {
+  before(async () => {
     // let GP = await aaveXBal.GP();
     // console.log("Pool ADDRESS",GP);
 
@@ -90,7 +93,7 @@ describe("Testing Aave X Balancer Contracts", async() => {
 
     // Ether.js .Contrat || .getContractAt ?
     wMaticContract = new ethers.Contract('0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270', wMaticAbi, Signer);
-    await wMaticContract.deployed();debtTokenContractAbi
+    await wMaticContract.deployed(); debtTokenContractAbi
 
     // Ether.js .Contrat || .getContractAt ?
     debtTokenContract = new ethers.Contract('0x307ffe186F84a3bc2613D1eA417A5737D69A7007', debtTokenContractAbi, Signer);
@@ -102,6 +105,10 @@ describe("Testing Aave X Balancer Contracts", async() => {
     // Balancer Pool
     bptContract = new ethers.Contract(poolAddress, wMaticAbi, Signer);
     await bptContract.deployed()
+
+    //Usdc Contract
+    usdcContract = new ethers.Contract(usdc, wMaticAbi, Signer);
+    await usdcContract.deployed();
 
     // Balancer Vault
     balancerVault = new ethers.Contract('0xBA12222222228d8Ba445958a75a0704d566BF2C8', balancerVaultABI, Signer);
@@ -126,16 +133,16 @@ describe("Testing Aave X Balancer Contracts", async() => {
 
   })
 
-  describe("Wrapping Matic for testing", async() => {
+  describe("Wrapping Matic for testing", async () => {
 
-    it("Should Wrap 500 Matic for User and Contract Balance", async() => {
+    it("Should Wrap 500 Matic for User and Contract Balance", async () => {
       const wMaticUserBalanceBefore = await aaveXBal.getERC20Balance(wMatic, userAddress);
       // console.log("wMatic User Balance :", ethers.utils.formatUnits(wMaticUserBalanceBefore, 18));
 
       const wMaticContractBalanceBefore = await aaveXBal.getERC20Balance(wMatic, contractAddress);
       // console.log("wMatic Contract Balance :", ethers.utils.formatUnits(wMaticContractBalanceBefore, 18));
 
-      await aaveXBal.wrapMatic(wMatic, {value: AMOUNT_1000});
+      await aaveXBal.wrapMatic(wMatic, { value: AMOUNT_1000 });
       await aaveXBal.transferFromToken(wMatic, contractAddress, userAddress, AMOUNT_500);
 
       const wMaticUserBalanceAfter = await aaveXBal.getERC20Balance(wMatic, userAddress);
@@ -150,9 +157,9 @@ describe("Testing Aave X Balancer Contracts", async() => {
   })
 
 
-  describe("Start on User Behalf Farming", async() => {
+  describe("Start on User Behalf Farming", async () => {
 
-    it("User Should Approve Pool MaxSpend", async() => {
+    it("User Should Approve Pool MaxSpend", async () => {
       GP = await aaveXBal.GP();
       // console.log("Pool address :", GP);
 
@@ -172,7 +179,7 @@ describe("Testing Aave X Balancer Contracts", async() => {
     })
 
 
-    it("User Should deposit 500 wMatic to Pool", async() => {
+    it("User Should deposit 500 wMatic to Pool", async () => {
       const useraTokenBalanceBefore = await aaveXBal.getERC20Balance(aToken, userAddress);
 
       await aaveXBal.supplyToPool(wMatic, AMOUNT_500, userAddress);
@@ -184,7 +191,7 @@ describe("Testing Aave X Balancer Contracts", async() => {
     })
 
 
-    it("User Should Approve Contract Credit Delegation", async() => {
+    it("User Should Approve Contract Credit Delegation", async () => {
       const delegationBalanceBefore = await aaveXBal.getBorrowAllowance(debtToken, userAddress, contractAddress);
       // console.log("Contract Delegation Allowance :", delegationBalanceBefore)
 
@@ -206,11 +213,11 @@ describe("Testing Aave X Balancer Contracts", async() => {
     //   await VaultContract.setUserUseReserveAsCollateral(wMatic, true)
     //   const USERDATA2 = await aaveXBal.getUserAccountData(userAddress);
     //   console.log("User Data After Setting Reserve as Collateral :", USERDATA2);
-      
+
     // })
 
 
-    it("User Should Borrow USDC From Pool", async() => {
+    it("User Should Borrow USDC From Pool", async () => {
       const userUsdcBalanceBefore = await aaveXBal.getERC20Balance(usdc, userAddress);
 
       // const resultUserData = await aaveXBal.getUserAccountData(userAddress);
@@ -240,16 +247,16 @@ describe("Testing Aave X Balancer Contracts", async() => {
       await VaultContract.borrow(usdc, 10000000, 1, 0, userAddress);
 
       const userUsdcBalanceAfter = await aaveXBal.getERC20Balance(usdc, userAddress);;
-      console.log("User USDC Balance After Borrowing:",  ethers.utils.formatUnits(userUsdcBalanceAfter, 6));
+      console.log("User USDC Balance After Borrowing:", ethers.utils.formatUnits(userUsdcBalanceAfter, 6));
 
       const contractUsdcBalanceAfter = await aaveXBal.getERC20Balance(usdc, contractAddress);;
-      console.log("User USDC Balance After Borrowing:",  ethers.utils.formatUnits(contractUsdcBalanceAfter, 6));
+      console.log("User USDC Balance After Borrowing:", ethers.utils.formatUnits(contractUsdcBalanceAfter, 6));
 
       assert.isAbove(userUsdcBalanceAfter, userUsdcBalanceBefore, "Usdc User's Balance should have increase");
 
     })
 
-    it("should Approve Balancer Pool to Spend Borrowed Usdc", async() => {
+    it("should Approve Balancer Pool to Spend Borrowed Usdc", async () => {
       const poolUSDCAllowanceBefore = await aaveXBal.getERC20Allowance(usdc, contractAddress, "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
       console.log("Pool Usdc Allowance of User Funds :", poolUSDCAllowanceBefore);
 
@@ -273,66 +280,71 @@ describe("Testing Aave X Balancer Contracts", async() => {
     // })
 
     it("Should retrieve Pool Tokens", async () => {
-      
-      const GPT = await aaveXBal.GPT(poolId)
-      console.log("Pool Tokens", GPT); // Return 0 values, why ? :/
+
+      const GPT = await balancerVault.getPoolTokens(poolId)
+      console.log("Pool Tokens", GPT);
     })
 
     it("should Approve Contract to BPT", async () => {
-      await bptContract.approve(userAddress, "100000000000000000000000000000000000000")
-      await bptContract.approve(contractAddress, "100000000000000000000000000000000000000" )
-      await bptContract.approve(poolAddress, "100000000000000000000000000000000000000")
-      await bptContract.approve("0xBA12222222228d8Ba445958a75a0704d566BF2C8", "100000000000000000000000000000000000000" )
-      
+      await bptContract.approve(userAddress, AMOUNT_BPT_APPROVE)
+      await bptContract.approve(contractAddress, AMOUNT_BPT_APPROVE)
+      await bptContract.approve(poolAddress, AMOUNT_BPT_APPROVE)
+      await bptContract.approve("0xBA12222222228d8Ba445958a75a0704d566BF2C8", AMOUNT_BPT_APPROVE)
+
       const BalancerAllowance = await aaveXBal.getERC20Allowance(poolAddress, userAddress, "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
       console.log("Allowance for BPT Token spending:", BalancerAllowance);
     })
 
-    it("should set Contract as Relayer", async () => {
 
-
-      await balancerVault.setRelayerApproval(userAddress, contractAddress, true);
-      await aaveXBal.setRelayerApproval(userAddress, contractAddress, true);
-
-    })
 
     it("should Increase Allowance BPT", async () => {
-      await bptContract.increaseAllowance(userAddress, "100000000000000000000000000000000000000")
-      await bptContract.increaseAllowance(contractAddress, "100000000000000000000000000000000000000" )
-      await bptContract.increaseAllowance(poolAddress, "100000000000000000000000000000000000000")
-      await bptContract.increaseAllowance("0xBA12222222228d8Ba445958a75a0704d566BF2C8", "100000000000000000000000000000000000000" )
+      await usdcContract.approve(userAddress, "100000000000000000000000000000000000000")
+      await usdcContract.approve(contractAddress, "100000000000000000000000000000000000000" )
+      await usdcContract.approve(poolAddress, "100000000000000000000000000000000000000")
+      await usdcContract.approve("0xBA12222222228d8Ba445958a75a0704d566BF2C8", "100000000000000000000000000000000000000" )
 
     })
 
-    it("should Approve Contract to BPT", async () => {
 
-      await aaveXBal.approveMaxSpend(poolAddress, userAddress)
-      await aaveXBal.approveMaxSpend(poolAddress, "0xBA12222222228d8Ba445958a75a0704d566BF2C8")
-      await aaveXBal.approveMaxSpend(poolAddress, contractAddress)
-      await aaveXBal.approveMaxSpend(poolAddress, poolAddress)
-    })
 
     it("User should supply borrowed Usdc to Balancer Pool", async () => {
-      const userUsdcBalanceBefore = await aaveXBal.getERC20Balance(usdc, userAddress);
-      
-      const TOKEN_IN_FOR_EXACT_BPT_OUT = AMOUNT_USDC; // 5.0 usdc
-      console.log('TOKEN_IN_FOR_EXACT_BPT_OUT', TOKEN_IN_FOR_EXACT_BPT_OUT)
-      const bptAmountOut = AMOUNT_USDC;
-      const enterTokenIndex = 1;
-      const abi = ['uint256', 'uint256', 'uint256'];
-      const data = [TOKEN_IN_FOR_EXACT_BPT_OUT, bptAmountOut, enterTokenIndex];
-      const userDataEncoded = defaultAbiCoder.encode(abi,data);
+      // const userUsdcBalanceBefore = await aaveXBal.getERC20Balance(usdc, userAddress);
 
-      // JoinPoolRequest ( address[] assets, uint256[] maxAmountsIn, bytes userData, bool fromInternalBalance )
-      const requestEncoded = {assets:[usdc, dai, mai, usdt], maxAmountsIn:[AMOUNT_USDC, 0, 0, 0], userData:userDataEncoded, fromInternalBalance:false};
+      // const TOKEN_IN_FOR_EXACT_BPT_OUT = AMOUNT_USDC; // 5.0 usdc
+      // console.log('TOKEN_IN_FOR_EXACT_BPT_OUT', TOKEN_IN_FOR_EXACT_BPT_OUT)
+      // const bptAmountOut = AMOUNT_BPT_OUT;
+      // const enterTokenIndex = 0;
+      // const abi = ['uint256', 'uint256', 'uint256'];
+      // const data = [TOKEN_IN_FOR_EXACT_BPT_OUT, bptAmountOut, enterTokenIndex];
+      // const userDataEncoded = defaultAbiCoder.encode(abi,data);
 
-      await aaveXBal.joinPool("0x06df3b2bbb68adc8b0e302443692037ed9f91b42000000000000000000000012", userAddress, userAddress, requestEncoded)
-   
-      const userUsdcBalanceAfter = await aaveXBal.getERC20Balance(usdc, userAddress);;
-      console.log("User USDC Balancer After Borrowing:", userUsdcBalanceAfter);
-    
-      assert.isAbove(userUsdcBalanceBefore, userUsdcBalanceAfter, "Usdc User's Balance should have increase");
+      // // JoinPoolRequest ( address[] assets, uint256[] maxAmountsIn, bytes userData, bool fromInternalBalance )
+      // const requestEncoded = {assets:[usdc, dai, mai, usdt], maxAmountsIn:[5e6, 0, 0, 0], userData:userDataEncoded, fromInternalBalance:false};
 
+      // await balancerVault.joinPool("0x06df3b2bbb68adc8b0e302443692037ed9f91b42000000000000000000000012", userAddress, userAddress, requestEncoded)
+
+      // const userUsdcBalanceAfter = await aaveXBal.getERC20Balance(usdc, userAddress);;
+      // console.log("User USDC Balancer After Borrowing:", userUsdcBalanceAfter);
+
+      // assert.isAbove(userUsdcBalanceBefore, userUsdcBalanceAfter, "Usdc User's Balance should have increase");
+
+
+      const poolId = "0x06df3b2bbb68adc8b0e302443692037ed9f91b42000000000000000000000012"
+      const tokens = [usdc, dai, mai, usdt]
+      const amountsIn = [AMOUNT_USDC, 0, 0, 0];
+      const minimumBPT = 0
+
+      await balancerVault.joinPool(
+        poolId,
+        userAddress,
+        userAddress,
+        {
+          assets: tokens,
+          maxAmountsIn: amountsIn,
+          fromInternalBalance: false,
+          userData: StablePoolEncoder.joinExactTokensInForBPTOut(amountsIn, minimumBPT),
+        }
+      );
     })
   })
 
