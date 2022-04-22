@@ -189,9 +189,10 @@ function approveMaxSpend(address _token, address _spender) public {
   IERC20(_token).approve(_spender, type(uint256).max);
 }
 
-function approveDelegation(address _DebtToken, address _delegatee, uint256 _amount) public {
-  ICreditDelegationToken(_DebtToken).approveDelegation(_delegatee, _amount);
-}
+// // TX Must Be Sent from Debt Source Contract (msg.sender conflict ?) 
+// function approveDelegation(address _DebtToken, address _delegatee, uint256 _amount) public {
+//   ICreditDelegationToken(_DebtToken).approveDelegation(_delegatee, _amount);
+// }
 
 function setReserveAsCollateral(address _user) public {
   IPool(GP()).setUserUseReserveAsCollateral(_user, true);
@@ -230,5 +231,20 @@ function setUserAddress() public {
   function getBorrowAllowance(address _debtToken, address _from, address _to) public view returns(uint256 balance_) {
     balance_ = ICreditDelegationToken(_debtToken).borrowAllowance(_from, _to);
   }
+
+  function getUserAccountData(address user) 
+      external
+    view
+    returns (
+      uint256 totalCollateralBase,
+      uint256 totalDebtBase,
+      uint256 availableBorrowsBase,
+      uint256 currentLiquidationThreshold,
+      uint256 ltv,
+      uint256 healthFactor
+    ) {
+    return IPool(GP()).getUserAccountData(user); 
+  }
+
 
 }
