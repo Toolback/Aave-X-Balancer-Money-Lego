@@ -123,13 +123,10 @@ describe("Testing Aave X Balancer Contracts", async () => {
 
     const user = await aaveXBal.userAddress();
     userAddress = user;
-    // console.log("// ADDRESS Signer / User ??", Signer.address, Signer, signer, signer._address, userAddress);
 
     const contract = await aaveXBal.contractAddress();
     contractAddress = contract;
 
-    // console.log("// ADDRESS Contract ??", contract);
-    // console.log("Pool ADDRESS", GP);
 
   })
 
@@ -223,26 +220,6 @@ describe("Testing Aave X Balancer Contracts", async () => {
       // const resultUserData = await aaveXBal.getUserAccountData(userAddress);
       // console.log("User Pool reserve Data :", resultUserData);
 
-
-      // await wMaticContract.approve(contractAddress, AMOUNT_500);
-      // await wMaticContract.approve(GP, AMOUNT_500);
-      // await wMaticContract.approve(WIETH, AMOUNT_500);
-
-
-      // await aaveXBal.approveMaxSpend(wMatic, GP);
-      // await aaveXBal.approveMaxSpend(wMatic, contractAddress);
-
-      // await aaveXBal.approveMaxSpend(aToken, GP);
-      // await aaveXBal.approveMaxSpend(aToken, contractAddress);
-
-      // await aaveXBal.approveMaxSpend(aToken, WIETH);
-      // await aaveXBal.approveMaxSpend(wMatic, WIETH);
-
-
-      // await aTokenContract.approve(contractAddress, AMOUNT_500);
-      // await aTokenContract.approve(GP, AMOUNT_500);
-      // await aTokenContract.approve(WIETH, AMOUNT_500);
-
       await aaveXBal.borrowFromPool(usdc, 10000000, 1, userAddress);
       await VaultContract.borrow(usdc, 10000000, 1, 0, userAddress);
 
@@ -256,59 +233,35 @@ describe("Testing Aave X Balancer Contracts", async () => {
 
     })
 
-    it("should Approve Balancer Pool to Spend Borrowed Usdc", async () => {
-      const poolUSDCAllowanceBefore = await aaveXBal.getERC20Allowance(usdc, contractAddress, "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
-      console.log("Pool Usdc Allowance of User Funds :", poolUSDCAllowanceBefore);
+    // it("Should retrieve Pool Tokens", async () => {
 
-      await aaveXBal.approveMaxSpend(usdc, "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
-      await aaveXBal.approveMaxSpend(usdc, contractAddress);
-      await aaveXBal.approveMaxSpend(usdc, poolAddress);
-      await aaveXBal.approveMaxSpend(usdc, userAddress)
-
-
-
-      const poolUSDCAllowanceAfter = await aaveXBal.getERC20Allowance(usdc, contractAddress, "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
-      console.log("Pool Usdc Allowance of User Funds :", poolUSDCAllowanceAfter);
-
-      assert.isAbove(poolUSDCAllowanceAfter, poolUSDCAllowanceBefore, "Balancer Pool Usdc allowance of User Funds should have increase");
-    })
-
-    // it("Should Retrieve Pool Id", async () => {
-    //   const GPI = await aaveXBal.getPoolId("0x06df3b2bbb68adc8b0e302443692037ed9f91b42")
-
-    //   console.log("Pool Id Is :", GPI);
+    //   const GPT = await balancerVault.getPoolTokens(poolId)
+    //   console.log("Pool Tokens", GPT);
     // })
 
-    it("Should retrieve Pool Tokens", async () => {
+    // it("should Approve Contract to BPT", async () => {
+    //   await bptContract.approve(userAddress, AMOUNT_BPT_APPROVE)
+    //   await bptContract.approve(contractAddress, AMOUNT_BPT_APPROVE)
+    //   await bptContract.approve(poolAddress, AMOUNT_BPT_APPROVE)
+    //   await bptContract.approve("0xBA12222222228d8Ba445958a75a0704d566BF2C8", AMOUNT_BPT_APPROVE)
 
-      const GPT = await balancerVault.getPoolTokens(poolId)
-      console.log("Pool Tokens", GPT);
-    })
-
-    it("should Approve Contract to BPT", async () => {
-      await bptContract.approve(userAddress, AMOUNT_BPT_APPROVE)
-      await bptContract.approve(contractAddress, AMOUNT_BPT_APPROVE)
-      await bptContract.approve(poolAddress, AMOUNT_BPT_APPROVE)
-      await bptContract.approve("0xBA12222222228d8Ba445958a75a0704d566BF2C8", AMOUNT_BPT_APPROVE)
-
-      const BalancerAllowance = await aaveXBal.getERC20Allowance(poolAddress, userAddress, "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
-      console.log("Allowance for BPT Token spending:", BalancerAllowance);
-    })
+    //   const BalancerAllowance = await aaveXBal.getERC20Allowance(poolAddress, userAddress, "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
+    //   console.log("Allowance for BPT Token spending:", BalancerAllowance);
+    // })
 
 
 
-    it("should Increase Allowance BPT", async () => {
-      await usdcContract.approve(userAddress, "100000000000000000000000000000000000000")
-      await usdcContract.approve(contractAddress, "100000000000000000000000000000000000000" )
-      await usdcContract.approve(poolAddress, "100000000000000000000000000000000000000")
+    it("should Increase Balancer Vault USDC Allowance", async () => {
       await usdcContract.approve("0xBA12222222228d8Ba445958a75a0704d566BF2C8", "100000000000000000000000000000000000000" )
-
+      const BalancerAllowance = await aaveXBal.getERC20Allowance(usdc, userAddress, "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
+      assert.isAbove(BalancerAllowance, 0, "Balancer Vault Allowance should be > 0")
     })
 
 
 
     it("User should supply borrowed Usdc to Balancer Pool", async () => {
-      // const userUsdcBalanceBefore = await aaveXBal.getERC20Balance(usdc, userAddress);
+
+      const userUsdcBalanceBefore = await aaveXBal.getERC20Balance(usdc, userAddress);
 
       // const TOKEN_IN_FOR_EXACT_BPT_OUT = AMOUNT_USDC; // 5.0 usdc
       // console.log('TOKEN_IN_FOR_EXACT_BPT_OUT', TOKEN_IN_FOR_EXACT_BPT_OUT)
@@ -345,13 +298,17 @@ describe("Testing Aave X Balancer Contracts", async () => {
           userData: StablePoolEncoder.joinExactTokensInForBPTOut(amountsIn, minimumBPT),
         }
       );
+
+      const userUsdcBalanceAfter = await aaveXBal.getERC20Balance(usdc, userAddress);;
+
+      assert.isBelow(userUsdcBalanceAfter, userUsdcBalanceBefore, "Usdc User's Balance should have decrease");
     })
   })
 
 
-  // describe("Close Users's Farming Position / Repay + TP", async() => {
-  //   it("should Withdraw supplied borrowed USDC from Pool", async() => {
-  //     await aaveXBal.joinPool("0x06df3b2bbb68adc8b0e302443692037ed9f91b42000000000000000000000063", userAddress, )
-  //   })
-  // })
+  describe("Close Users's Farming Position / Repay + TP", async() => {
+    it("should Withdraw supplied borrowed USDC from Pool", async() => {
+      await balancerVault.exitPool
+    })
+  })
 })
