@@ -25,6 +25,8 @@ import '@aave/core-v3/contracts/interfaces/ICreditDelegationToken.sol';
 
 // Balancer Protocol
 import './BalancerPool.sol';
+import "@balancer-labs/v2-vault/contracts/interfaces/IVault.sol";
+
 
 import "hardhat/console.sol";
 
@@ -73,7 +75,8 @@ contract AaveXBal is BalancerPool {
     uint256 _amountToSupply, // Initial Amount to Supply
     address _tokenToBorrow,
     uint256 _amountToBorrow, // Amount to Borrow cf Health Factor
-    uint8 _interestRateMode // 1 = Stable 2 = Variable 
+    uint8 _interestRateMode, // 1 = Stable 2 = Variable
+    IVault.JoinPoolRequest memory _request 
     ) public payable {
 
     // /!\ User Must Approve Contract to Spend Relevant Supply Amount of Token From Token Source Contract Before TX
@@ -97,7 +100,8 @@ contract AaveXBal is BalancerPool {
   function undoFarm(
     address _tokenToRepay, 
     uint8 _interestRateMode, 
-    address _tokenToWithdraw 
+    address _tokenToWithdraw,
+    IVault.JoinPoolRequest memory _request 
     ) public {
 
     exitPool(_poolId, address(this), address(this), _request);
