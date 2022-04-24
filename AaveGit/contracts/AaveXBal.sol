@@ -71,57 +71,46 @@ contract AaveXBal is BalancerPool {
     address _DebtToken, // Stable or Variable Debt Token Borrowed 
     address _tokenToSupply, // Initial Pool Supply Funding 
     uint256 _amountToSupply, // Initial Amount to Supply
-    address _onBehalfOfSupply, // Address of Supplier 
     address _tokenToBorrow,
     uint256 _amountToBorrow, // Amount to Borrow cf Health Factor
-    uint8 _interestRateMode, // 1 = Stable 2 = Variable 
-    address _onBehalfOfBorrow,
-    bytes32 _poolId,
-    address _sender,
-    address _recipient,
-    IVault.JoinPoolRequest memory _request // Address of borrower 
+    uint8 _interestRateMode // 1 = Stable 2 = Variable 
     ) public payable {
 
     // /!\ User Must Approve Contract to Spend Relevant Supply Amount of Token From Token Source Contract Before TX
     // /!\ Same For Delegate Borrowing to contract ? (from Debt Token Source Contract)
    
-    // Approve Borrowing from contract
-    // approveDelegation(_DebtToken, _onBehalfOfSupply, _amountToSupply);
-
+    transferFromToken(_tokenToSupply, msg.sender, address(this), _amountToSupply);
     
+    approveMaxSpend(_tokenToSupply, GP());
     //Start Farming (Supply (wMatic) -> Borrow (Usdc) -> Supply Borrowed (Usdc) to Balancer Pool)
     // Supply initial Token To Aave Pool -> Set Collateral for borrowing
-    supplyToPool(_tokenToSupply, _amountToSupply, _onBehalfOfSupply);
+    supplyToPool(_tokenToSupply, _amountToSupply, address(this));
 
     // Borrow Usdc from Aave Pool cf. Health Factor 
-    borrowFromPool(_tokenToBorrow, _amountToBorrow, _interestRateMode, _onBehalfOfBorrow);
+    borrowFromPool(_tokenToBorrow, _amountToBorrow, _interestRateMode, address(this));
 
-    // Supply Borrowed Usdc from Aave to Balancer Pool
-    joinPool(_poolId, _sender, _recipient, _request);
+    joinPool(_poolId, address(this), address(this), _request);
 
 
   }
   // address PAYABLE _sender ? \\
   function undoFarm(
-    bytes32 _poolId,
-    address _sender,
-    address payable _recipient,
-    IVault.ExitPoolRequest memory _request,
     address _tokenToRepay, 
     uint8 _interestRateMode, 
-    address _onBehalfOfRepay, 
-    address _tokenToWithdraw, 
-    address _to
+    address _tokenToWithdraw 
     ) public {
- 
-    // Withdraw Borrowed Token + Benefits
-    exitPool(_poolId, _sender, _recipient, _request);
+
+    exitPool(_poolId, address(this), address(this), _request);
+
+    approveMaxSpend(_tokenToRepay, GP());
  
     // Repay Borrowed Token Aave V3 Pool + Fees from loan;
-    repayToPool(_tokenToRepay, type(uint256).max, _interestRateMode, _onBehalfOfRepay);
+    repayToPool(_tokenToRepay, type(uint256).max, _interestRateMode, address(this));
 
     // Withdraw Initial Token + Benefits
-    withdrawFromPool(_tokenToWithdraw, type(uint256).max, _to);
+    withdrawFromPool(_tokenToWithdraw, type(uint256).max, address(this));
+
+    transferFromToken(_tokenToWithdraw, address(this), msg.sender, msg.value);
   }
 
 
