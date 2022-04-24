@@ -7,12 +7,16 @@ const debtTokenContractAbi = require('../contracts/abis/DebtTokenBase.json');
 const aTokenAbi = require('@aave/core-v3/artifacts/contracts/protocol/tokenization/AToken.sol/AToken.json')
 const VaultABI = require('@aave/core-v3/artifacts/contracts/protocol/pool/Pool.sol/Pool.json');
 
+
+//Balancer 
+
 const { defaultAbiCoder } = require("@ethersproject/abi");
 // const { formatUserSummaryAndIncentives } require '@aave/math-utils';
 // import dayjs from 'dayjs';
 const { getPoolAddress } = require("@balancer-labs/balancer-js");
 // import { IERC20Abi } from ./IERC20.json
 const { StablePoolEncoder } = require("@balancer-labs/balancer-js");
+
 
 const poolId = "0x06df3b2bbb68adc8b0e302443692037ed9f91b42000000000000000000000012"
 const poolAddress = getPoolAddress(poolId)
@@ -21,6 +25,12 @@ console.log("PoolAddress from Balancer:", poolAddress);
 
 const balancerVaultABI = require("./balancerVaultAbi.json")
 
+
+// Uniswap 
+
+// const {Pool} = require("@uniswap/v3-sdk")
+// const { Token } = require('@uniswap/sdk-core')
+// const { IUniswapV3PoolABI } =  require('@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json')
 
 
 require('chai')
@@ -43,6 +53,7 @@ let aTokenContract;
 let GP;
 let bptContract;
 let balancerVault;
+let uniswapPoolContract;
 
 // Tokens Address
 let wMatic = '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270';
@@ -68,6 +79,10 @@ let AMOUNT_700 = ethers.utils.parseEther('700');
 let AMOUNT_1000 = ethers.utils.parseEther('1000');
 let AMOUNT_BPT_OUT = ethers.utils.parseEther('4');
 let AMOUNT_BPT_APPROVE = ethers.utils.parseEther('100')
+
+const uniswapPoolAddress = ""
+
+
 
 // Let's play =D 
 describe("Testing Aave X Balancer Contracts", async () => {
@@ -120,6 +135,10 @@ describe("Testing Aave X Balancer Contracts", async () => {
     VaultContract = new ethers.Contract('0x794a61358D6845594F94dc1DB02A252b5b4814aD', VaultABI, Signer);
     await VaultContract.deployed();
 
+    // // Uniswap Pool
+    // uniswapPoolContract = new ethers.Contract(uniswapPoolAddress, IUniswapV3PoolABI, Signer)
+    // await uniswapPoolContract.deployed();
+
     // Set User and Contract address for input testing
     await aaveXBal.setUserAddress();
 
@@ -142,7 +161,7 @@ describe("Testing Aave X Balancer Contracts", async () => {
       // console.log("wMatic Contract Balance :", ethers.utils.formatUnits(wMaticContractBalanceBefore, 18));
 
       await aaveXBal.wrapMatic(wMatic, { value: AMOUNT_1000 });
-      await aaveXBal.transferFromToken(wMatic, contractAddress, userAddress, AMOUNT_500);
+      // await aaveXBal.transferFromToken(wMatic, contractAddress, userAddress, AMOUNT_500);
 
       const wMaticUserBalanceAfter = await aaveXBal.getERC20Balance(wMatic, userAddress);
       // console.log("wMatic User Balance After TX :", ethers.utils.formatUnits(wMaticUserBalanceAfter, 18));
@@ -361,7 +380,7 @@ describe("Testing Aave X Balancer Contracts", async () => {
       const userUsdcBalance = await aaveXBal.getERC20Balance(usdc, userAddress);
       console.log("User USDC Balance Before Repay (should be full):", userUsdcBalance);
 
-      await aaveXBal.repayToPool(usdc, userUsdcBalance, 1, userAddress)
+      await aaveXBal.repayToPool(usdc, ethers.constants.MaxUint256, 1, userAddress)
 
       const userUsdcBalanceAfter = await aaveXBal.getERC20Balance(usdc, userAddress);
       console.log("User USDC Balance After Repay (should be null):", userUsdcBalanceAfter);
@@ -369,10 +388,10 @@ describe("Testing Aave X Balancer Contracts", async () => {
 
     it("Should Withdraw initial funds from AavePool", async () => {
       const wMaticUserBalanceBefore = await aaveXBal.getERC20Balance(wMatic, userAddress);
-      console.log("wMatic User Balance After TX :", ethers.utils.formatUnits(wMaticUserBalanceBefore, 18));
+      console.log("wMatic User Balance Before TX :", ethers.utils.formatUnits(wMaticUserBalanceBefore, 18));
       const useraTokenBalanceBefore = await aaveXBal.getERC20Balance(aToken, userAddress);
       console.log("User aToken before :", useraTokenBalanceBefore)
-      await aaveXBal.withdrawFromPool(wMatic, AMOUNT_400, userAddress)
+      await aaveXBal.withdrawFromPool(wMatic, ethers.constants.MaxUint256,  userAddress)
 
       const useraTokenBalanceAfter = await aaveXBal.getERC20Balance(aToken, userAddress);
       console.log("User aToken After :", useraTokenBalanceAfter)
