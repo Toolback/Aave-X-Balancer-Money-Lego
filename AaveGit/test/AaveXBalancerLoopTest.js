@@ -292,8 +292,8 @@ describe("Testing Aave X Balancer Contracts", async () => {
   })
 
 
-  describe("Close Users's Farming Position / Repay + TP", async() => {
-    it("should Withdraw supplied borrowed USDC from Pool", async() => {
+  describe("Close Users's Farming Position / Repay + TP", async () => {
+    it("should Withdraw supplied borrowed USDC from Pool", async () => {
       const BPTBalance = await bptContract.balanceOf(userAddress);
       console.log("BPT Balance After Depositing usdc;", BPTBalance);
 
@@ -312,7 +312,7 @@ describe("Testing Aave X Balancer Contracts", async () => {
         {
           assets: tokens,
           minAmountsOut: amountsOut,
-          toInternalBalance : false,
+          toInternalBalance: false,
           userData: StablePoolEncoder.exitExactBPTInForOneTokenOut(bptAmountIn, exitTokenIndex)
         }
       )
@@ -327,8 +327,8 @@ describe("Testing Aave X Balancer Contracts", async () => {
     it("should Increase Aave Pool USDC Allowance", async () => {
       GP = await aaveXBal.GP();
 
-      await usdcContract.approve(GP, "100000000000000000000000000000000000000" )
-      await usdcContract.approve(contractAddress, "100000000000000000000000000000000000000" )
+      await usdcContract.approve(GP, "100000000000000000000000000000000000000")
+      await usdcContract.approve(contractAddress, "100000000000000000000000000000000000000")
 
       await aaveXBal.approveMaxSpend(usdc, GP);
       await aaveXBal.approveMaxSpend(usdc, contractAddress);
@@ -354,7 +354,7 @@ describe("Testing Aave X Balancer Contracts", async () => {
       console.log("wMatic User Balance Before TX :", ethers.utils.formatUnits(wMaticUserBalanceBefore, 18));
       const useraTokenBalanceBefore = await aaveXBal.getERC20Balance(aToken, userAddress);
       console.log("User aToken before :", useraTokenBalanceBefore)
-      await aaveXBal.withdrawFromPool(wMatic, AMOUNT_WMATICOUT,  userAddress)
+      await aaveXBal.withdrawFromPool(wMatic, AMOUNT_WMATICOUT, userAddress)
 
       const useraTokenBalanceAfter = await aaveXBal.getERC20Balance(aToken, userAddress);
       console.log("User aToken After :", useraTokenBalanceAfter)
