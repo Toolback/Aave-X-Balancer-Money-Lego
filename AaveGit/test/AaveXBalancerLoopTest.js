@@ -72,6 +72,9 @@ let AMOUNT_USDC = ethers.BigNumber.from("5");
 let AMOUNT_USDCMAX = ethers.BigNumber.from("500");
 let AMOUNT_USDCOUT = ethers.BigNumber.from("4");
 
+let AMOUNT_USDCOUT2 = ethers.BigNumber.from("2");
+let AMOUNT_WMATICOUT = ethers.utils.parseEther('100');
+
 let AMOUNT_400 = ethers.utils.parseEther('400');
 let AMOUNT_500 = ethers.utils.parseEther('500');
 let AMOUNT_700 = ethers.utils.parseEther('700');
@@ -88,19 +91,8 @@ const uniswapPoolAddress = ""
 describe("Testing Aave X Balancer Contracts", async () => {
 
   before(async () => {
-    // let GP = await aaveXBal.GP();
-    // console.log("Pool ADDRESS",GP);
-
-
     Signer = await ethers.getSigner();
-
-    // console.log(Signer.address, "Signer details")
     signer = await ethers.provider.getSigner(Signer.address);
-
-    // console.log("signer details" ,signer, "END signer");
-    // console.log("Signer details :", Signer, "END Signer");
-
-
 
     // Deploy Contract
     const AaveXBal = await ethers.getContractFactory("AaveXBal", Signer);
@@ -148,52 +140,42 @@ describe("Testing Aave X Balancer Contracts", async () => {
     const contract = await aaveXBal.contractAddress();
     contractAddress = contract;
 
+    GP = await aaveXBal.GP();
 
   })
 
   describe("Wrapping Matic for testing", async () => {
-
-    it("Should Wrap 500 Matic for User and Contract Balance", async () => {
+    it("Should Wrap 1000 Matic", async () => {
       const wMaticUserBalanceBefore = await aaveXBal.getERC20Balance(wMatic, userAddress);
-      // console.log("wMatic User Balance :", ethers.utils.formatUnits(wMaticUserBalanceBefore, 18));
-
-      const wMaticContractBalanceBefore = await aaveXBal.getERC20Balance(wMatic, contractAddress);
-      // console.log("wMatic Contract Balance :", ethers.utils.formatUnits(wMaticContractBalanceBefore, 18));
-
       await aaveXBal.wrapMatic(wMatic, { value: AMOUNT_1000 });
-      // await aaveXBal.transferFromToken(wMatic, contractAddress, userAddress, AMOUNT_500);
-
       const wMaticUserBalanceAfter = await aaveXBal.getERC20Balance(wMatic, userAddress);
-      // console.log("wMatic User Balance After TX :", ethers.utils.formatUnits(wMaticUserBalanceAfter, 18));
 
-      const wMaticContractBalanceAfter = await aaveXBal.getERC20Balance(wMatic, contractAddress);
-      // console.log("wMatic Contract Balance After TX :", ethers.utils.formatUnits(wMaticContractBalanceAfter, 18));
-
-      assert.isAbove(wMaticContractBalanceAfter, wMaticContractBalanceBefore, "Contract Should be Funded with 500 wMatic");
       assert.isAbove(wMaticUserBalanceAfter, wMaticUserBalanceBefore, "User Should be Funded with 500 wMatic")
     })
   })
 
-
   describe("Start on User Behalf Farming", async () => {
 
     it("User Should Approve Pool MaxSpend", async () => {
-      GP = await aaveXBal.GP();
-      // console.log("Pool address :", GP);
-
       const poolwMaticAllowanceBefore = await aaveXBal.getERC20Allowance(wMatic, contractAddress, GP);
-      // console.log("Contract wMatic Allowance of User Funds :", poolwMaticAllowanceBefore);
-
-      // await wMaticContract.approve(contractAddress, AMOUNT_500);
-      // await wMaticContract.approve(GP, AMOUNT_500);
 
       await aaveXBal.approveMaxSpend(wMatic, GP);
-      // await aaveXBal.approveMaxSpend(wMatic, contractAddress);
 
       const poolwMaticAllowanceAfter = await aaveXBal.getERC20Allowance(wMatic, contractAddress, GP);
-      // console.log("Contract wMatic Allowance of User Funds :", poolwMaticAllowanceAfter);
 
       assert.isAbove(poolwMaticAllowanceAfter, poolwMaticAllowanceBefore, "Contract wMatic allowance of User Funds should have increase");
+    })
+
+    it("Should transfer Initial Amout to Contract", async () => {
+      const wMaticContractBalanceBefore = await aaveXBal.getERC20Balance(wMatic, contractAddress);
+      console.log("wMatic Contract Balance Before TX :", ethers.utils.formatUnits(wMaticContractBalanceBefore, 18));
+
+      await wMaticContract.transferFrom(userAddress, contractAddress, AMOUNT_500)
+
+      const wMaticContractBalanceAfter = await aaveXBal.getERC20Balance(wMatic, contractAddress);
+      console.log("wMatic Contract Balance After TX :", ethers.utils.formatUnits(wMaticContractBalanceAfter, 18));
+
+      assert.isAbove(wMaticContractBalanceAfter, wMaticContractBalanceBefore, "Contract Should be Funded with 500 wMatic")
     })
 
 
@@ -205,41 +187,21 @@ describe("Testing Aave X Balancer Contracts", async () => {
       const useraTokenBalanceAfter = await aaveXBal.getERC20Balance(aToken, userAddress);
 
       assert.isAbove(useraTokenBalanceAfter, useraTokenBalanceBefore, "aToken User's Balance should have increase");
-      // await aaveXBal.transferFromToken(aToken, contractAddress, userAddress, AMOUNT_500);
     })
 
 
     it("User Should Approve Contract Credit Delegation", async () => {
       const delegationBalanceBefore = await aaveXBal.getBorrowAllowance(debtToken, userAddress, contractAddress);
-      // console.log("Contract Delegation Allowance :", delegationBalanceBefore)
-
-      // await debtTokenContract.approveDelegation(WIETH, AMOUNT_1000);
 
       await debtTokenContract.approveDelegation(contractAddress, AMOUNT_1000);
-      // await debtTokenContract.approveDelegation(GP, AMOUNT_1000);
+
       const delegationBalanceAfter = await aaveXBal.getBorrowAllowance(debtToken, userAddress, contractAddress);
-      // console.log("Contract Delegation Allowance :", delegationBalanceAfter)
 
       assert.isAbove(delegationBalanceAfter, delegationBalanceBefore, "aToken User's Balance should have increase");
     })
 
-
-    // it("Should Set Reserve as Collateral", async() => {
-    //   const USERDATA = await aaveXBal.getUserAccountData(userAddress);
-    //   console.log("User Data Before Setting Reserve as Collateral :", USERDATA);
-
-    //   await VaultContract.setUserUseReserveAsCollateral(wMatic, true)
-    //   const USERDATA2 = await aaveXBal.getUserAccountData(userAddress);
-    //   console.log("User Data After Setting Reserve as Collateral :", USERDATA2);
-
-    // })
-
-
     it("User Should Borrow USDC From Pool", async () => {
       const userUsdcBalanceBefore = await aaveXBal.getERC20Balance(usdc, userAddress);
-
-      // const resultUserData = await aaveXBal.getUserAccountData(userAddress);
-      // console.log("User Pool reserve Data :", resultUserData);
 
       await aaveXBal.borrowFromPool(usdc, 10000000, 1, userAddress);
       await VaultContract.borrow(usdc, 10000000, 1, 0, userAddress);
@@ -273,7 +235,7 @@ describe("Testing Aave X Balancer Contracts", async () => {
 
 
     it("should Increase Balancer Vault USDC Allowance", async () => {
-      await usdcContract.approve("0xBA12222222228d8Ba445958a75a0704d566BF2C8", "100000000000000000000000000000000000000" )
+      await usdcContract.approve("0xBA12222222228d8Ba445958a75a0704d566BF2C8", "100000000000000000000000000000000000000")
       const BalancerAllowance = await aaveXBal.getERC20Allowance(usdc, userAddress, "0xBA12222222228d8Ba445958a75a0704d566BF2C8");
       assert.isAbove(BalancerAllowance, 0, "Balancer Vault Allowance should be > 0")
     })
@@ -380,7 +342,8 @@ describe("Testing Aave X Balancer Contracts", async () => {
       const userUsdcBalance = await aaveXBal.getERC20Balance(usdc, userAddress);
       console.log("User USDC Balance Before Repay (should be full):", userUsdcBalance);
 
-      await aaveXBal.repayToPool(usdc, ethers.constants.MaxUint256, 1, userAddress)
+      await aaveXBal.repayToPool(usdc, AMOUNT_USDCOUT2, 1, userAddress)
+      // ethers.constants.MaxUint256
 
       const userUsdcBalanceAfter = await aaveXBal.getERC20Balance(usdc, userAddress);
       console.log("User USDC Balance After Repay (should be null):", userUsdcBalanceAfter);
@@ -391,7 +354,7 @@ describe("Testing Aave X Balancer Contracts", async () => {
       console.log("wMatic User Balance Before TX :", ethers.utils.formatUnits(wMaticUserBalanceBefore, 18));
       const useraTokenBalanceBefore = await aaveXBal.getERC20Balance(aToken, userAddress);
       console.log("User aToken before :", useraTokenBalanceBefore)
-      await aaveXBal.withdrawFromPool(wMatic, ethers.constants.MaxUint256,  userAddress)
+      await aaveXBal.withdrawFromPool(wMatic, AMOUNT_WMATICOUT,  userAddress)
 
       const useraTokenBalanceAfter = await aaveXBal.getERC20Balance(aToken, userAddress);
       console.log("User aToken After :", useraTokenBalanceAfter)
