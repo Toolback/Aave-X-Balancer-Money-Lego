@@ -9,7 +9,6 @@
 - Supply Token to Aave V3 Pool
 - Borrow Token at corresponding collat from Aave Pool
 
-
 ## startBalancerLoop
 - startAaveLoop()
 - Supply Borrowed Usdc to Balancer Pool Mai/Usdc 
@@ -20,7 +19,7 @@
 ## stopAaveLoop
 - Repay Borrowed Token Amount From Aave Pool
 - Withdraw Initial Token Funds from Aave Pool
-- 
+
 ## stopBalancerLoop
 - Withdraw Borrowed Token From Balancer Pool
 - stopAaveLoop()
