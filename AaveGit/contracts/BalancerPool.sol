@@ -13,13 +13,6 @@ contract BalancerPool {
         Vault = IVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
     }
 
-    // struct JoinPoolRequest {
-    //     IAsset[] assets;
-    //     uint256[] maxAmountsIn;
-    //     bytes userData;
-    //     bool fromInternalBalance;
-    // }
-
     function joinPool(
         bytes32 poolId,
         address sender,
@@ -41,27 +34,6 @@ contract BalancerPool {
     //     return Pool.getPoolId();
     // }
 
-    // struct ExitPoolRequest {
-    //     IAsset[] assets;
-    //     uint256[] minAmountsOut;
-    //     bytes userData;
-    //     bool toInternalBalance;
-    // }
-
-    // function toBytes(string memory source) public pure returns (bytes32 result) {
-    // bytes memory tempEmptyStringTest = bytes(source);
-    // if (tempEmptyStringTest.length == 0) {
-    //     return 0x0;
-    // }
-
-    // assembly {
-    //     result := mload(add(source, 32))
-    // }
-    // }
-
-    function setRelayerApproval(address sender, address relayer, bool approved) public {
-        Vault.setRelayerApproval(sender, relayer, approved);
-    }
 
     function exitPool(
         bytes32 poolId,
