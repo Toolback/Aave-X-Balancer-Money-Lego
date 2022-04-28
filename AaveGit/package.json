@@ -1,18 +1,29 @@
 {
-  "name": "hardhat-project",
+  "dependencies": {
+    "@aave/contract-helpers": "^1.1.0",
+    "@aave/core-v3": "^1.13.1",
+    "@aave/math-utils": "^1.1.0",
+    "@aave/periphery-v3": "^1.10.0",
+    "@balancer-labs/balancer-js": "^1.0.1",
+    "@balancer-labs/v2-deployments": "^2.3.0",
+    "@balancer-labs/v2-vault": "^2.0.0",
+    "@ethersproject/abi": "^5.6.1",
+    "@uniswap/v3-periphery": "^1.4.0",
+    "big-number": "^2.0.0",
+    "chai-as-promised": "^7.1.1",
+    "dayjs": "^1.11.0",
+    "dotenv": "^16.0.0",
+    "hardhat": "^2.9.3"
+  },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.5",
+    "@nomiclabs/hardhat-etherscan": "^3.0.3",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
+    "@uniswap/sdk-core": "^3.0.1",
+    "@uniswap/v3-sdk": "^3.8.2",
     "chai": "^4.3.6",
-    "chai-as-promised": "^7.1.1",
-    "dotenv": "^16.0.0",
     "ethereum-waffle": "^3.4.4",
     "ethers": "^5.6.2",
-    "hardhat": "^2.9.2"
-  },
-  "dependencies": {
-    "@aave/core-v3": "^1.13.1",
-    "@aave/periphery-v3": "^1.10.0",
-    "@uniswap/v3-periphery": "^1.4.0"
+    "reflect-metadata": "^0.1.13"
   }
 }
