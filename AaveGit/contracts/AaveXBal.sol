@@ -27,6 +27,7 @@ import '@aave/core-v3/contracts/interfaces/ICreditDelegationToken.sol';
 import './BalancerPool.sol';
 import "@balancer-labs/v2-vault/contracts/interfaces/IVault.sol";
 
+// import './UniswapSwap.sol';
 
 import "hardhat/console.sol";
 
@@ -56,9 +57,13 @@ contract AaveXBal is BalancerPool {
 
   address public contractAddress;
   address public userAddress;
+  address public aavePool;
+
+  mapping(address => mapping(address => uint256)) public userBalance;
 
   constructor() {
     pool = IPool(GP());
+    aavePool = GP();
 
     contractAddress = address(this);
   }
@@ -66,61 +71,97 @@ contract AaveXBal is BalancerPool {
 
 /*_________________________________________________________/
 /                      Write Function                     /
-/                    /Main (auto)                        /
+/                    /Loop (auto)                        /
 /______________________________________________________*/
 
-  function startFarming(
-    address _DebtToken, // Stable or Variable Debt Token Borrowed 
+
+  function startBalancerLoop(
     address _tokenToSupply, // Initial Pool Supply Funding 
-    uint256 _amountToSupply, // Initial Amount to Supply
     address _tokenToBorrow,
+    uint256 _amountToSupply, // Initial Amount to Supply
     uint256 _amountToBorrow, // Amount to Borrow cf Health Factor
     uint8 _interestRateMode, // 1 = Stable 2 = Variable
+    bytes32 _poolId,
     IVault.JoinPoolRequest memory _request 
     ) public payable {
+      startAaveLoop(_tokenToSupply, _tokenToBorrow, _amountToSupply, _amountToBorrow, _interestRateMode);
 
-    // /!\ User Must Approve Contract to Spend Relevant Supply Amount of Token From Token Source Contract Before TX
-    // /!\ Same For Delegate Borrowing to contract ? (from Debt Token Source Contract)
-   
-    transferFromToken(_tokenToSupply, msg.sender, address(this), _amountToSupply);
+      // Supply Borrowed Tokens to Balancer Pool
+      joinPool(_poolId, address(this), address(this), _request);
+  }
+
+    function stopBalancerLoop(
+    address _tokenToRepay, 
+    address _tokenToWithdraw,
+    // uint256 _amountCollatReload,
+    uint256 _amountToRepay,
+    uint256 _amountToWithdraw,
+    uint256 _amountToSendBack,
+    uint8 _interestRateMode,
+    bytes32 _poolId,
+    IVault.ExitPoolRequest memory _request 
+    ) public {
+
+    //!\ Repay Collateral Wear in order to max withdraw
     
-    approveMaxSpend(_tokenToSupply, GP());
-    //Start Farming (Supply (wMatic) -> Borrow (Usdc) -> Supply Borrowed (Usdc) to Balancer Pool)
+    // Withdraw Borrowed token from Balancer Pool
+    exitPool(_poolId, address(this), payable(address(this)), _request);
+
+    stopAaveLoop(_tokenToRepay, _tokenToWithdraw, _amountToRepay, _amountToWithdraw, _amountToSendBack, _interestRateMode);
+  }
+
+
+  function startAaveLoop(
+    address _tokenToSupply, // Initial Pool Supply Funding 
+    address _tokenToBorrow,
+    uint256 _amountToSupply, // Initial Amount to Supply
+    uint256 _amountToBorrow, // Amount to Borrow cf Health Factor
+    uint8 _interestRateMode // 1 = Stable 2 = Variable
+    ) public payable {
+    // /!\ TODO : Opti Spending Amount allowed
+    approveMaxSpend(_tokenToSupply, aavePool);
+
+    userBalance[msg.sender][_tokenToSupply] += _amountToSupply;
+
     // Supply initial Token To Aave Pool -> Set Collateral for borrowing
     supplyToPool(_tokenToSupply, _amountToSupply, address(this));
 
-    // Borrow Usdc from Aave Pool cf. Health Factor 
+    // Borrow Token from Aave Pool cf. Health Factor 
     borrowFromPool(_tokenToBorrow, _amountToBorrow, _interestRateMode, address(this));
-
-    joinPool(_poolId, address(this), address(this), _request);
-
-
   }
-  // address PAYABLE _sender ? \\
-  function undoFarm(
+
+  function stopAaveLoop(
     address _tokenToRepay, 
-    uint8 _interestRateMode, 
     address _tokenToWithdraw,
-    IVault.JoinPoolRequest memory _request 
+    // uint256 _amountCollatReload,
+    uint256 _amountToRepay,
+    uint256 _amountToWithdraw,
+    uint256 _amountToSendBack,
+    uint8 _interestRateMode
     ) public {
 
-    exitPool(_poolId, address(this), address(this), _request);
+    //!\ Repay Collateral Wear in order to max withdraw
 
+    // /!\ TODO : Opti Spending Amount allowed
+    // Approve Pool to spend token
     approveMaxSpend(_tokenToRepay, GP());
  
     // Repay Borrowed Token Aave V3 Pool + Fees from loan;
-    repayToPool(_tokenToRepay, type(uint256).max, _interestRateMode, address(this));
+    repayToPool(_tokenToRepay, _amountToRepay, _interestRateMode, address(this));
+                           // type(uint256).max
+    // Withdraw Initial Token 
+    withdrawFromPool(_tokenToWithdraw, _amountToWithdraw, address(this));
 
-    // Withdraw Initial Token + Benefits
-    withdrawFromPool(_tokenToWithdraw, type(uint256).max, address(this));
+    // Transfer initials funding to msg.sender
+    transferFromToken(_tokenToWithdraw, address(this), msg.sender, _amountToSendBack);
+    userBalance[msg.sender][_tokenToWithdraw] -= _amountToSendBack;
 
-    transferFromToken(_tokenToWithdraw, address(this), msg.sender, msg.value);
   }
 
 
 /*_________________________________________________________/
 /                      Write Function                     /
-/                    /Main (mano)                        /
+/                    /Main                       /
 /______________________________________________________*/
 
   function supplyToPool(address _tokenToSupply, uint256 _amountToSupply, address _onBehalfOfSupply) public payable {
@@ -171,6 +212,7 @@ function transferFromToken(address _token, address _from, address _to, uint256 _
 // Wrap / Unwrap Matic
 function wrapMatic(address _wTokenAddress) public payable {
   IWETH(_wTokenAddress).deposit{value: msg.value}();
+  transferFromToken(wMatic, address(this), msg.sender, msg.value);
 }
 
 function unWrapWMatic(address _wTokenAddress) public payable {
