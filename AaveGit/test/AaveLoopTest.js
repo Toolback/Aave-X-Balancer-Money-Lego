@@ -133,7 +133,7 @@ describe("Testing Aave X Balancer Contracts", async () => {
       const usdcContractBalanceAfter = await aaveXBal.getERC20Balance(usdc, contractAddress);
       console.log("USDC Contract Balance After TX :", ethers.utils.formatUnits(usdcContractBalanceAfter, 6));
 
-      assert.isAbove(usdcContractBalanceAfter, usdcContractBalanceBefore, "Usdc Borrowed Amount Should have Increase" )
+      assert.isAbove(usdcContractBalanceAfter, usdcBalanceBefore, "Usdc Borrowed Amount Should have Increase" )
     })
   })
 
