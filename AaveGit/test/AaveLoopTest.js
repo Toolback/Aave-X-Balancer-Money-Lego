@@ -34,7 +34,7 @@ let wMaticContract;
 
 let balancerPoolAddress = "0x06df3b2bbb68adc8b0e302443692037ed9f91b42"
 let balancerPoolId = "0x06df3b2bbb68adc8b0e302443692037ed9f91b42000000000000000000000012"
-
+let vaultAddress = "0xBA12222222228d8Ba445958a75a0704d566BF2C8"
 let bptToken = "0x06df3b2bbb68adc8b0e302443692037ed9f91b42"
 
 // Tokens Address
@@ -212,7 +212,7 @@ describe("Testing Aave X Balancer Contracts", async () => {
       
       await aaveXBal.approveMaxSpend(usdc, "0xBA12222222228d8Ba445958a75a0704d566BF2C8")
 
-      await aaveXBal.startBalancerLoop(wMatic, usdc, AMOUNT_200, AMOUNT_USDC, interestRateMode, balancerPoolId, request);
+      await aaveXBal.startBalancerLoop(wMatic, usdc, vaultAddress, AMOUNT_200, AMOUNT_USDC, interestRateMode, balancerPoolId, request);
 
       const userBptBalanceAfter = await aaveXBal.getERC20Balance(bptToken, contractAddress);
       // console.log("User BPT Balance After Borrowing:", ethers.utils.formatUnits(userBptBalanceAfter, 18));
@@ -256,8 +256,8 @@ describe("Testing Aave X Balancer Contracts", async () => {
       const encodedData = StablePoolEncoder.exitExactBPTInForOneTokenOut(bptAmountsIn, tokenIndex);
 
       const request = { assets: tokens, minAmountsOut: amountsOut, userData: encodedData, toInternalBalance: false };
-      await aaveXBal.stopBalancerLoop(usdc, wMatic, AMOUNT_USDCOUTBALANCER, AMOUNT_WMATICOUT2, AMOUNT_WMATICOUT2, interestRateMode, balancerPoolId, request);
-
+      await aaveXBal.stopBalancerLoop(usdc, wMatic, vaultAddress, AMOUNT_USDCOUTBALANCER, AMOUNT_WMATICOUT2, AMOUNT_WMATICOUT2, interestRateMode, balancerPoolId, request);
+      
       const userBptBalanceAfter = await aaveXBal.getERC20Balance(bptToken, userAddress);
       console.log("User BPT Balance After Borrowing:", ethers.utils.formatUnits(userBptBalanceAfter, 18));
     })
