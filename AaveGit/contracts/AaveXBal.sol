@@ -33,6 +33,7 @@ import "hardhat/console.sol";
 
 
 contract AaveXBal is BalancerPool {
+  address owner;
 
   // Contracts
   IPool internal pool;
@@ -62,10 +63,16 @@ contract AaveXBal is BalancerPool {
   mapping(address => mapping(address => uint256)) public userBalance;
 
   constructor() {
+    owner = msg.sender;
     pool = IPool(GP());
     aavePool = GP();
 
     contractAddress = address(this);
+  }
+
+  modifier onlyOwner {
+    require(msg.sender == owner);
+    _;
   }
 
 
@@ -78,21 +85,23 @@ contract AaveXBal is BalancerPool {
   function startBalancerLoop(
     address _tokenToSupply, // Initial Pool Supply Funding 
     address _tokenToBorrow,
+    address _vaultAddress,
     uint256 _amountToSupply, // Initial Amount to Supply
     uint256 _amountToBorrow, // Amount to Borrow cf Health Factor
     uint8 _interestRateMode, // 1 = Stable 2 = Variable
     bytes32 _poolId,
     IVault.JoinPoolRequest memory _request 
-    ) public payable {
+    ) public onlyOwner payable {
       startAaveLoop(_tokenToSupply, _tokenToBorrow, _amountToSupply, _amountToBorrow, _interestRateMode);
 
       // Supply Borrowed Tokens to Balancer Pool
-      joinPool(_poolId, address(this), address(this), _request);
+      joinPool(_vaultAddress, _poolId, address(this), address(this), _request);
   }
 
     function stopBalancerLoop(
     address _tokenToRepay, 
     address _tokenToWithdraw,
+    address _vaultAddress,
     // uint256 _amountCollatReload,
     uint256 _amountToRepay,
     uint256 _amountToWithdraw,
@@ -100,12 +109,12 @@ contract AaveXBal is BalancerPool {
     uint8 _interestRateMode,
     bytes32 _poolId,
     IVault.ExitPoolRequest memory _request 
-    ) public {
+    ) public onlyOwner {
 
     //!\ Repay Collateral Wear in order to max withdraw
     
     // Withdraw Borrowed token from Balancer Pool
-    exitPool(_poolId, address(this), payable(address(this)), _request);
+    exitPool(_vaultAddress, _poolId, address(this), payable(address(this)), _request);
 
     stopAaveLoop(_tokenToRepay, _tokenToWithdraw, _amountToRepay, _amountToWithdraw, _amountToSendBack, _interestRateMode);
   }
@@ -117,7 +126,7 @@ contract AaveXBal is BalancerPool {
     uint256 _amountToSupply, // Initial Amount to Supply
     uint256 _amountToBorrow, // Amount to Borrow cf Health Factor
     uint8 _interestRateMode // 1 = Stable 2 = Variable
-    ) public payable {
+    ) public onlyOwner payable {
     // /!\ TODO : Opti Spending Amount allowed
     approveMaxSpend(_tokenToSupply, aavePool);
 
@@ -138,7 +147,7 @@ contract AaveXBal is BalancerPool {
     uint256 _amountToWithdraw,
     uint256 _amountToSendBack,
     uint8 _interestRateMode
-    ) public {
+    ) public onlyOwner {
 
     //!\ Repay Collateral Wear in order to max withdraw
 
@@ -164,17 +173,17 @@ contract AaveXBal is BalancerPool {
 /                    /Main                       /
 /______________________________________________________*/
 
-  function supplyToPool(address _tokenToSupply, uint256 _amountToSupply, address _onBehalfOfSupply) public payable {
+  function supplyToPool(address _tokenToSupply, uint256 _amountToSupply, address _onBehalfOfSupply) public onlyOwner payable {
     // Supply _amount of wMatic _onBehalfOfSupply to Aave Pool V3 Protocol
     /// (asset, amount, onBehalfOf, referralCode)
     pool.supply(_tokenToSupply, _amountToSupply, _onBehalfOfSupply, 0);    
   }
 
-  function withdrawFromPool(address _tokenToWithdraw, uint256 _amountToWithdraw, address _to) public payable {
+  function withdrawFromPool(address _tokenToWithdraw, uint256 _amountToWithdraw, address _to) public onlyOwner  payable {
     pool.withdraw(_tokenToWithdraw, _amountToWithdraw, _to);
   }
 
-  function borrowFromPool(address _tokenToBorrow, uint256 _amountToBorrow, uint8 _interestRateMode, address _onBehalfOfBorrow) public payable {
+  function borrowFromPool(address _tokenToBorrow, uint256 _amountToBorrow, uint8 _interestRateMode, address _onBehalfOfBorrow) public onlyOwner  payable {
     // Borrow InitialFunds/3 Usdc from Aave Pool
     // (asset, amount, interestRateMode, referralCode, onBehalfOf)
     pool.borrow(_tokenToBorrow, _amountToBorrow, _interestRateMode, 0, _onBehalfOfBorrow);
@@ -184,22 +193,22 @@ contract AaveXBal is BalancerPool {
     pool.repay(_tokenToRepay, _amountToRepay, _interestRateMode, _onBehalfOfRepay);
   }
   // Category = 0 = default
-  function setUserEMode(uint8 _categoryId) public {
+  function setUserEMode(uint8 _categoryId) public onlyOwner {
     pool.setUserEMode(_categoryId);
   }
 
   //\\ WETHGateway for wrapping native ERC20, using deprecated 'deposit' function instead of 'supply' from pool 
-  function dGateDeposit(address _user) public payable{
+  function dGateDeposit(address _user) public onlyOwner payable{
     WETHGateway.depositETH{value: msg.value}(GP(), _user, 0);
   }
 
   //\\  WETHGateway BorrowETH (only native ?) 
-  function dGateBorrow(uint256 _amount) public {
+  function dGateBorrow(uint256 _amount) public onlyOwner{
     WETHGateway.borrowETH(GP(), _amount, 2, 0);
   }
 
   //\\ WETHGateWay Withdraw Initial native ERC20 supplyied from pool
-  function dGateWithdraw(address _user) public {
+  function dGateWithdraw(address _user) public onlyOwner{
     WETHGateway.withdrawETH(GP(), type(uint256).max, _user);
   }
 
@@ -208,6 +217,9 @@ contract AaveXBal is BalancerPool {
 /                    /Utils                              /
 /______________________________________________________*/
 
+function changeOwner(address _newContractOwner) public onlyOwner {
+    owner = _newContractOwner;
+}
 
 function transferFromToken(address _token, address _from, address _to, uint256 _amount) public payable {
   IERC20(_token).transferFrom(_from, _to, _amount);
