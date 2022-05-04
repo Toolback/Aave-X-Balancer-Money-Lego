@@ -154,7 +154,7 @@ contract AaveXBal is BalancerPool {
 
     // Transfer initials funding to msg.sender
     transferFromToken(_tokenToWithdraw, address(this), msg.sender, _amountToSendBack);
-    userBalance[msg.sender][_tokenToWithdraw] -= _amountToSendBack;
+    // userBalance[msg.sender][_tokenToWithdraw] -= _amountToSendBack;
 
   }
 
@@ -182,6 +182,10 @@ contract AaveXBal is BalancerPool {
 
   function repayToPool(address _tokenToRepay, uint256 _amountToRepay, uint8 _interestRateMode, address _onBehalfOfRepay) public payable {
     pool.repay(_tokenToRepay, _amountToRepay, _interestRateMode, _onBehalfOfRepay);
+  }
+  // Category = 0 = default
+  function setUserEMode(uint8 _categoryId) public {
+    pool.setUserEMode(_categoryId);
   }
 
   //\\ WETHGateway for wrapping native ERC20, using deprecated 'deposit' function instead of 'supply' from pool 
@@ -267,6 +271,23 @@ function setUserAddress() public {
     balance_ = ICreditDelegationToken(_debtToken).borrowAllowance(_from, _to);
   }
 
+  function getUserEMode(address _user) public view {
+    pool.getUserEMode(_user);
+  }
+
+  // function getEModeCategoryData(uint8 _id) public view returns(
+  //   uint16 ltv, 
+  //   uint16 liquidationTreshold, 
+  //   uint16 liquidationBonus, 
+  //   address customPriceSource, 
+  //   string memory customLabel) {
+  //   return pool.getEModeCategoryData(_id);
+  // }
+
+  function getEModeCategoryData(uint8 _id) public view {
+    pool.getEModeCategoryData(_id);
+  }
+
   function getUserAccountData(address user) 
       external
     view
@@ -279,6 +300,38 @@ function setUserAddress() public {
       uint256 healthFactor
     ) {
     return IPool(GP()).getUserAccountData(user); 
+  }
+  
+  // function getReserveData(address _asset) public view returns(
+  //   uint256 configuration,
+  //   uint128 liquidityIndex,
+  //   uint128 currentLiquidityRate,
+  //   uint128 variableBorrowIndew, 
+  //   uint128 currentVariableBorrowRate,
+  //   uint128 currentStableBorrowRate,
+  //   uint40 lastUpdateTimeStamp,
+  //   uint16 id,
+  //   address aTokenAddress,
+  //   address stableDebtTokenAddress,
+  //   address variableDebtTokenAddress,
+  //   address interestRateStrategyAddress,
+  //   uint128 accruedToTreasury,
+  //   uint128 unbacked,
+  //   uint128 isolationModeTotalDebt
+  // ) {
+  // return pool.getReserveData(_asset);
+  // }
+
+  function getReserveData(address _asset) public view {
+    pool.getReserveData(_asset);
+  }
+
+  function getUserConfiguration(address _user) public view {
+    pool.getUserConfiguration(_user);
+  }
+
+  function getReservesList() public view {
+    pool.getReservesList();
   }
 
 
