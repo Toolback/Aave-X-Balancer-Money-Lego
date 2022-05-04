@@ -163,7 +163,7 @@ contract AaveXBal is BalancerPool {
 
     // Transfer initials funding to msg.sender
     transferFromToken(_tokenToWithdraw, address(this), msg.sender, _amountToSendBack);
-    // userBalance[msg.sender][_tokenToWithdraw] -= _amountToSendBack;
+    userBalance[msg.sender][_tokenToWithdraw] -= _amountToSendBack;
 
   }
 
