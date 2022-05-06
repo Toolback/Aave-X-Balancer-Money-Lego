@@ -2,25 +2,32 @@
 # Polygon Mainnet Fork Used For Testing
 (Work in progress)
 
+# Flashloan Function : 
+
+## dodoFlashLoan()
+- Flashloan from Dodoex Pool
+- startBalancerLoop()
+- stopBalancerLoop()
+- repay Flashloan to Dodoex
 
 # Supply Function : 
 
-## startAaveLoop
+## startAaveLoop()
 - Supply Token to Aave V3 Pool
 - Borrow Token at corresponding collat from Aave Pool
 
-## startBalancerLoop
+## startBalancerLoop()
 - startAaveLoop()
 - Supply Borrowed Usdc to Balancer Pool Mai/Usdc 
 
 
 # Whithdraw Function: 
 
-## stopAaveLoop
+## stopAaveLoop()
 - Repay Borrowed Token Amount From Aave Pool
 - Withdraw Initial Token Funds from Aave Pool
 
-## stopBalancerLoop
+## stopBalancerLoop()
 - Withdraw Borrowed Token From Balancer Pool
 - stopAaveLoop()
 
