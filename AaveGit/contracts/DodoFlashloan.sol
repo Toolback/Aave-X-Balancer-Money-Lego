@@ -18,19 +18,6 @@ interface IDODO is AaveXBAL {
 
 contract Flashloan {
 
-  address _tokenToSupply;
-  address _tokenToBorrow;
-  address _vaultAddress;
-  uint256 _amountToSupply;
-  uint256 _amountToBorrow;
-  uint256 _amountToRepay;
-  uint256 _amountToWithdraw;
-  uint256 _amountToSendBack;
-  uint8 _interestRateMode;
-  bytes32 _poolId;
-  IVault.JoinPoolRequest _requestIn;
-  IVault.ExitPoolRequest _requestOut;
-
     function dodoFlashLoan(
         address flashLoanPool, //You will make a flashloan from this DODOV2 pool
         uint256 loanAmount,
