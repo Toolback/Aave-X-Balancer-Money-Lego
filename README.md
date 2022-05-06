@@ -26,9 +26,9 @@
 
 # Todo List : 
 - [~] => Allow swaps to pay for collateral wear
-- [] => Activate the E-Mode of Aave according to the token and the collateral of the user
+- [~] => Activate the E-Mode of Aave according to the token and the collateral of the user
 - [] => calculate the max loop possible according to the collateral and the potential e-mode
-- [] => add a loop with a flashloan leverage
+- [~] => add a loop with a flashloan leverage
 - []
 - []
 - [] => optimize testing and transaction costs
